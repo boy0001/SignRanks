@@ -1,0 +1,53 @@
+version: 0.1.1
+signs:
+# Should we prevent signs from being destroyed?
+  protect: true  
+  types:
+    promote:
+# Are promotion signs enabled?
+      enabled: true 
+# The text that will appear on the first line of the sign
+      text: '[Promote]'
+    inherit:
+      enabled: true
+      text: '[Inherit]'
+    prefix:
+      enabled: true
+      text: '[Prefix]'
+    XPbank:
+      enabled: false
+      text: '[XPBank]'
+economy:
+# The symbol to use for currency.
+  symbol: $
+  salary:
+# Should pay checks be enabled?
+    enabled: false
+#The message you recieve at notify-level 2 or greater
+    message: §9[§3SignRanksPlus+§9]§f Pay Day example message.
+# notify-level:
+# 0 = no messages
+# 1 = just your new balance
+# 2 = breakdown of your earnings.
+# check-subgroups: do you get paid for subgroups (true)
+# interval: How often you get a pay check (in seconds)
+    notify-level: 2
+    check-subgroups: true
+    interval: 1200
+    groups:
+# Add the groups you want to get paid here.
+# To pay in levels use lvl instead of exp
+# Base = Static amount you get paid
+# Bonus = how much you get per online player
+# Percentage = get payed/taxed based off your current balance/xp
+      Default:
+        exp:
+          base: 0 exp
+          bonus: 0 exp
+          percentage: 0
+        money:
+          base: 0
+          bonus: 0
+          percentage: 0
+# using /xpp - can you transfer XP to another map?
+cross_map_trade: false

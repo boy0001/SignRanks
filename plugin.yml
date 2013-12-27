@@ -1,0 +1,10 @@
+name: SignRanksPlus
+main: com.empcraft.SignRanks
+version: 0.1.1
+commands:
+   xpp:
+      description: Transfer exp to another player.
+   sr:
+      description: Transfer exp to another player.
+   signranks:
+      description: Transfer exp to another player.
