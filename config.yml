@@ -14,7 +14,7 @@ signs:
     prefix:
       enabled: true
       text: '[Prefix]'
-    XPbank:
+    xpbank:
       cost: 5 lvl
       enabled: false
       text: '[XPBank]'
