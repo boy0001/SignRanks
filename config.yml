@@ -15,8 +15,10 @@ signs:
       enabled: true
       text: '[Prefix]'
     XPbank:
+      cost: 5 lvl
       enabled: false
       text: '[XPBank]'
+      storage: 100
 economy:
 # The symbol to use for currency.
   symbol: $

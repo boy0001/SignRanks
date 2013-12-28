@@ -1,6 +1,4 @@
 package com.empcraft;
-
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -8,23 +6,10 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.logging.Logger;
-
 import net.milkbowl.vault.chat.Chat;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
 import net.milkbowl.vault.permission.Permission;
-
-
-
-
-
-
-
-
-
-
-
-
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -44,31 +29,18 @@ import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
-
-
-
 public final class SignRanks extends JavaPlugin implements Listener {
 	
     private static final Logger log = Logger.getLogger("Minecraft");
     public static Economy econ = null;
     public static Permission perms = null;
     public static Chat chat = null;
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
     Timer timer = new Timer ();
 	TimerTask mytask = new TimerTask () {
 		String mymode;
 		@Override
 	    public void run () {
-
 			double paymoney;
 			Set<String> groups = getConfig().getConfigurationSection("economy.salary.groups").getKeys(false);
 	    	for(Player player:getServer().getOnlinePlayers()){
@@ -97,7 +69,6 @@ public final class SignRanks extends JavaPlugin implements Listener {
 	    			else if (perms.getPrimaryGroup(player)==group) {
 	    				has = true;
 	    			}
-
 	    			if (has) {
 	    				if (true)
 	    				{
@@ -119,9 +90,7 @@ public final class SignRanks extends JavaPlugin implements Listener {
 	    				  		  cost = cost.substring(0,cost.length() - 4);
 	    				  		  paylvl += Integer.parseInt(cost)*(getServer().getOnlinePlayers().length-1);
 	    				  	  }
-	    					payexp += (getConfig().getInt(("economy.salary.groups."+group+".exp.percentage"))*(econ.getBalance(player.getName())))/100; 
-	    					
-	    					
+	    					payexp += (getConfig().getInt(("economy.salary.groups."+group+".exp.percentage"))*(econ.getBalance(player.getName())))/100; 			
 	    				}
 	    				if (true)
 	    				{
@@ -132,15 +101,10 @@ public final class SignRanks extends JavaPlugin implements Listener {
 	    			if ((paymoney + payexp + paylvl!=0)&&(getConfig().getInt("economy.salary.notify-level")>1)) {
 	    				player.sendMessage("    "+ChatColor.GRAY+getConfig().getString("economy.symbol")+paymoney+ChatColor.WHITE+", "+ChatColor.GRAY+payexp+" exp"+ChatColor.WHITE+", "+ChatColor.GRAY+paylvl+" lvl"+ChatColor.WHITE+" from group "+ChatColor.BLUE+group);
 	    			}
-
 	    			}
 	    			else {
-	    			}
-
-	    			
-	    			
+	    			}	
 	    		}
-		    	// pay salary
 				if (paymoney > 0) {
 					amount = ChatColor.GRAY+"You earned: "+ChatColor.GREEN+getConfig().getString("economy.symbol")+paymoney;
 					econ.depositPlayer(player.getName(), paymoney);
@@ -184,39 +148,6 @@ public final class SignRanks extends JavaPlugin implements Listener {
 	    }
 		}
 	};
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-	
     @Override
     public void onDisable() {
     	timer.cancel();
@@ -254,9 +185,8 @@ public final class SignRanks extends JavaPlugin implements Listener {
 		 Player player = event.getPlayer();
 		 if (player.hasPermission("signranks.destroy.*")==false) {
 	        if(event.getBlock().getState() instanceof Sign) {
-	            Sign sign = (Sign) event.getBlock().getState();
-	            
-	            if (((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text"))))) {              
+	            Sign sign = (Sign) event.getBlock().getState();  
+	            if (((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text"))))) {              
 	            	player.sendMessage(ChatColor.LIGHT_PURPLE+"You broke a sign :O");
 	                if ((sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))&&(player.hasPermission("signranks.destroy.promote")==false)) {
 		            	event.setCancelled(true);
@@ -270,42 +200,48 @@ public final class SignRanks extends JavaPlugin implements Listener {
 		            	event.setCancelled(true);
 		                player.sendMessage(ChatColor.GRAY+"Missing requirements: "+ChatColor.RED+"signranks.destroy.inherit");
 	                }
+	                else if (((sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text")))&&(player.hasPermission("signranks.destroy.xpbank")||(sign.getLine(3)==player.getName()))==false)) {
+		            	if (sign.getLine(3)==player.getName()) {
+		            		//TODO give them the XP that was on the sign.
+		            	}
+		            	else {
+		            		event.setCancelled(true);
+			                player.sendMessage(ChatColor.GRAY+"You need "+ChatColor.RED+"signranks.destroy.xpbanks"+ChatColor.GRAY+" to destroy "+sign.getLine(3)+"'s "+this.getConfig().getString("signs.types.xpbank.text"));
+		            	}        	
+	                }
 	            }
 	        }
-	        // Stop the blocks the signs are touching from being destroyed
-	        // We use 68 as the ID because the sign is a 'Wall Sign'
 	        if(event.getBlock().getRelative(BlockFace.NORTH, 1).getTypeId() == 68) {
 	            Sign sign = (Sign) event.getBlock().getRelative(BlockFace.NORTH, 1).getState();
-	            if (((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text"))))) {
+	            if (((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text"))))) {
 	                event.setCancelled(true);
 	                player.sendMessage(ChatColor.RED+"Please destroy the sign directly.");
 	            }
 	        }
 	        if(event.getBlock().getRelative(BlockFace.EAST, 1).getTypeId() == 68) {
 	            Sign sign = (Sign) event.getBlock().getRelative(BlockFace.EAST, 1).getState();
-	            if (((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text"))))) {
+	            if (((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text"))))) {
 	                event.setCancelled(true);
 	                player.sendMessage(ChatColor.RED+"Please destroy the sign directly.");
 	            }
 	        }
 	        if(event.getBlock().getRelative(BlockFace.SOUTH, 1).getTypeId() == 68) {
 	            Sign sign = (Sign) event.getBlock().getRelative(BlockFace.SOUTH, 1).getState();
-	            if (((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text"))))) {
+	            if (((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text"))))) {
 	                event.setCancelled(true);
 	                player.sendMessage(ChatColor.RED+"Please destroy the sign directly.");
 	            }
 	        }
 	        if(event.getBlock().getRelative(BlockFace.WEST, 1).getTypeId() == 68) {
 	            Sign sign = (Sign) event.getBlock().getRelative(BlockFace.WEST, 1).getState();
-	            if (((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text"))))) {
+	            if (((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text"))))) {
 	                event.setCancelled(true);
 	                player.sendMessage(ChatColor.RED+"Please destroy the sign directly.");
 	            }
 	        }
-	        // We use 63 as the ID because this sign isn't placed on a wall, so it's a 'Sign Post'
 	        if(event.getBlock().getRelative(BlockFace.UP, 1).getTypeId() == 63) {
 	            Sign sign = (Sign) event.getBlock().getRelative(BlockFace.UP, 1).getState();
-	            if (((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text"))))) {
+	            if (((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text"))))) {
 	                event.setCancelled(true);
 	                player.sendMessage(ChatColor.RED+"Please destroy the sign directly.");
 	            }
@@ -313,38 +249,6 @@ public final class SignRanks extends JavaPlugin implements Listener {
 	 }
 	 }
 	 }
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
 	@EventHandler
 	public void onSignChange(SignChangeEvent event)
     {
@@ -388,8 +292,20 @@ public final class SignRanks extends JavaPlugin implements Listener {
 				hasperm = true;
 			}
 		}
-
-		if ((hasperm)&&(type2!="")) {
+		else if ((line1.equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.xpbank.text"))) || (line1.equalsIgnoreCase(this.getConfig().getString("signs.types.xpbank.text")))) {
+			type2 = this.getConfig().getString("signs.types.xpbank.text");
+			if (player.hasPermission("signranks.create.xpbank")) {
+				hasperm = true;
+			}
+		}
+		if ((hasperm)&&(type2==this.getConfig().getString("signs.types.xpbank.text"))) {
+			//TODO xp place
+			event.setLine(0, "§1" + type2);
+			event.setLine(1, "");
+			event.setLine(2, "");
+			event.setLine(3, player.getName());
+		}
+		else if ((hasperm)&&(type2!="")) {
 			try {
 			int costtype;
 			int use;
@@ -741,6 +657,10 @@ public final class SignRanks extends JavaPlugin implements Listener {
         		  player.sendMessage(ChatColor.RED+"You do not have permission to use this sign. If you think this is an error, please contact your server Administrator.");
         	  }
           }
+          else if (sign.getLine(0).equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.xpbank.text"))) {
+        	  //TODO right click XP bank
+        	  
+          }
         }
       else {
     	  if (sign.getLine(0).equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.promote.text"))) {
@@ -751,6 +671,9 @@ public final class SignRanks extends JavaPlugin implements Listener {
     	  }
     	  else if (sign.getLine(0).equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.prefix.text"))) {
     		  player.sendMessage(ChatColor.LIGHT_PURPLE+"Thanks for using SignRanksPlus+ by Empire92");
+    	  }
+    	  else if (sign.getLine(0).equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.xpbank.text"))) {
+    		  //TODO left click xp bank
     	  }
           }
         }
