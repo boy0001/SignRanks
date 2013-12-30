@@ -31,6 +31,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -165,7 +166,7 @@ public final class SignRanks extends JavaPlugin implements Listener {
         getConfig().options().copyDefaults(true);
         
         final Map<String, Object> options = new HashMap<String, Object>();
-        getConfig().set("version", "0.1.3");
+        getConfig().set("version", "0.1.6");
         
         options.put("signs.protect",true);
         
@@ -176,12 +177,18 @@ public final class SignRanks extends JavaPlugin implements Listener {
         options.put("signs.types.inherit.text","[Inherit]");
         
         options.put("signs.types.prefix.enabled",true);
+        options.put("signs.types.prefix.refund",false);
         options.put("signs.types.prefix.text","[Prefix]");
+        
+        options.put("signs.types.suffix.enabled",true);
+        options.put("signs.types.suffix.refund",false);
+        options.put("signs.types.suffix.text","[Suffix]");
         
         options.put("signs.types.xpbank.enabled",true);
         options.put("signs.types.xpbank.text","[xpBank]");
         options.put("signs.types.xpbank.cost","5 lvl");
-        options.put("signs.types.xpbank.storage",10000);
+        options.put("signs.types.xpbank.storage.Default",5000);
+        options.put("signs.types.xpbank.storage.Builder",10000);
         
         options.put("economy.symbol","$");
         options.put("economy.salary.enabled",false);
@@ -233,7 +240,7 @@ public final class SignRanks extends JavaPlugin implements Listener {
 		 if (player.hasPermission("signranks.destroy.*")==false) {
 	        if(event.getBlock().getState() instanceof Sign) {
 	            Sign sign = (Sign) event.getBlock().getState();  
-	            if (((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text"))))) {              
+	            if (((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.suffix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.suffix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text"))))) {              
 	            	player.sendMessage(ChatColor.LIGHT_PURPLE+"You broke a sign :O");
 	                if ((sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))&&(player.hasPermission("signranks.destroy.promote")==false)) {
 		            	event.setCancelled(true);
@@ -242,6 +249,10 @@ public final class SignRanks extends JavaPlugin implements Listener {
 	                else if ((sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))&&(player.hasPermission("signranks.destroy.prefix")==false)) {
 		            	event.setCancelled(true);
 		                player.sendMessage(ChatColor.GRAY+"Missing requirements: "+ChatColor.RED+"signranks.destroy.prefix");
+	                }
+	                else if ((sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.suffix.text")))&&(player.hasPermission("signranks.destroy.suffix")==false)) {
+		            	event.setCancelled(true);
+		                player.sendMessage(ChatColor.GRAY+"Missing requirements: "+ChatColor.RED+"signranks.destroy.suffix");
 	                }
 	                else if ((sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))&&(player.hasPermission("signranks.destroy.inherit")==false)) {
 		            	event.setCancelled(true);
@@ -283,31 +294,31 @@ public final class SignRanks extends JavaPlugin implements Listener {
 	        	player.sendMessage(ChatColor.RED+"Please destroy the sign directly.");
 	        if(event.getBlock().getRelative(BlockFace.NORTH, 1).getTypeId() == 68) {
 	            Sign sign = (Sign) event.getBlock().getRelative(BlockFace.NORTH, 1).getState();
-	            if (((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text"))))) {
+	            if (((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.suffix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.suffix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text"))))) {
 	            	event.setCancelled(true);
 	            }
 	        }
 	        if(event.getBlock().getRelative(BlockFace.EAST, 1).getTypeId() == 68) {
 	            Sign sign = (Sign) event.getBlock().getRelative(BlockFace.EAST, 1).getState();
-	            if (((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text"))))) {
+	            if (((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.suffix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.suffix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text"))))) {
 	            	event.setCancelled(true);
 	            }
 	        }
 	        if(event.getBlock().getRelative(BlockFace.SOUTH, 1).getTypeId() == 68) {
 	            Sign sign = (Sign) event.getBlock().getRelative(BlockFace.SOUTH, 1).getState();
-	            if (((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text"))))) {
+	            if (((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.suffix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.suffix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text"))))) {
 	            	event.setCancelled(true);
 	            }
 	        }
 	        if(event.getBlock().getRelative(BlockFace.WEST, 1).getTypeId() == 68) {
 	            Sign sign = (Sign) event.getBlock().getRelative(BlockFace.WEST, 1).getState();
-	            if (((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text"))))) {
+	            if (((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.suffix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.suffix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text"))))) {
 	            	event.setCancelled(true);
 	            }
 	        }
 	        if(event.getBlock().getRelative(BlockFace.UP, 1).getTypeId() == 63) {
 	            Sign sign = (Sign) event.getBlock().getRelative(BlockFace.UP, 1).getState();
-	            if (((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text"))))) {
+	            if (((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.suffix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.suffix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text"))))) {
 	            	event.setCancelled(true);
 	            }
 	        }
@@ -356,6 +367,12 @@ public final class SignRanks extends JavaPlugin implements Listener {
 		else if (((line1.equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.prefix.text"))) || (line1.equalsIgnoreCase(this.getConfig().getString("signs.types.prefix.text"))))&&(this.getConfig().getBoolean("signs.types.prefix.enabled"))) {
 			type2 = this.getConfig().getString("signs.types.prefix.text");
 			if (player.hasPermission("signranks.create.prefix")) {
+				hasperm = true;
+			}
+		}
+		else if (((line1.equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.suffix.text"))) || (line1.equalsIgnoreCase(this.getConfig().getString("signs.types.suffix.text"))))&&(this.getConfig().getBoolean("signs.types.suffix.enabled"))) {
+			type2 = this.getConfig().getString("signs.types.suffix.text");
+			if (player.hasPermission("signranks.create.suffix")) {
 				hasperm = true;
 			}
 		}
@@ -432,6 +449,7 @@ public final class SignRanks extends JavaPlugin implements Listener {
 		  	  }
 		  	  if (Integer.parseInt(cost) <= 0) {
 		  		  player.sendMessage(ChatColor.RED+"[WARNING] "+ChatColor.GRAY +"amount is negative: "+ChatColor.RED+line3);
+		  		  hasperm = false;
 		  	  }
 		  	  try {
 		  		use = Integer.parseInt(line4);
@@ -504,7 +522,7 @@ public final class SignRanks extends JavaPlugin implements Listener {
         		  costtype = 2;
         		  cost = cost.substring(0,cost.length() - 4);
         	  }
-        	  else { 
+        	  else {  
         		  costtype = 0;
         		  cost = cost.substring(1,cost.length());
         	  }
@@ -758,6 +776,98 @@ public final class SignRanks extends JavaPlugin implements Listener {
         		  player.sendMessage(ChatColor.RED+"You do not have permission to use this sign. If you think this is an error, please contact your server Administrator.");
         	  }
           }
+          
+          
+          
+          //TODO suffix click
+          
+          else if ((sign.getLine(0).equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.suffix.text")))&&(this.getConfig().getBoolean("signs.types.suffix.enabled"))) {
+        	  if (player.hasPermission("signranks.use.suffix")) {
+        	  String cost = sign.getLine(2);
+        	  if (cost.contains(" exp")) {
+        		  costtype = 1;
+        		  cost = cost.substring(0,cost.length() - 4);
+        	  }
+        	  else if (cost.contains(" lvl")) {
+        		  costtype = 2;
+        		  cost = cost.substring(0,cost.length() - 4);
+        	  }
+        	  else { 
+        		  costtype = 0;
+        		  cost = cost.substring(1,cost.length());
+        	  }
+        	  if (chat.getPlayerSuffix(player) == sign.getLine(1)) {
+        		  player.sendMessage(ChatColor.GRAY+"You already have the suffix "+ChatColor.RED+sign.getLine(1)+ChatColor.GRAY+".");
+        	  }
+        	  else {
+        		  int use;
+        		  try {
+        			  use = Integer.parseInt(sign.getLine(3));
+        		  }
+        		  catch (Exception e) {
+        			  String[] mygroups = perms.getPlayerGroups(player);
+        			  // if (Arrays.asList(perms.getGroups()).contains(sign.getLine(3))) {
+        			  if ((Arrays.asList(mygroups).contains(sign.getLine(3)))||(Arrays.asList(perms.getGroups()).contains(sign.getLine(3))==false)) {
+        				  use = -1;
+        			  }
+        			  else {
+        				  use = 0;
+        			  }
+        		  }
+        		  if ((use == 0)||(use<-1)) {
+        			  if (Arrays.asList(perms.getGroups()).contains(sign.getLine(3))==false) {
+        				  player.sendMessage(ChatColor.GRAY+"This sign has "+ChatColor.RED+use+ChatColor.GRAY+" uses left.");
+        			  }
+        			  else {
+        				  player.sendMessage(ChatColor.GRAY+"You lack the group "+ChatColor.RED+sign.getLine(3)+ChatColor.GRAY+".");
+        			  }
+        		  }
+        		  else {
+        			  ExperienceManager expMan = new ExperienceManager(player);
+        			  boolean canbuy = false;
+        			  if (costtype == 0) {
+        					  EconomyResponse r = econ.withdrawPlayer(player.getName(), Integer.parseInt(cost));
+        					  if(r.transactionSuccess()) {
+        					  canbuy = true;
+        					  }
+        			  }
+        			  else if (costtype == 1) {
+        				  if (expMan.getCurrentExp() >= Integer.parseInt(cost)) {
+        					  expMan.changeExp(-Integer.parseInt(cost));
+        					  canbuy = true;
+        				  }
+        			  }
+        			  else if (costtype == 2) {
+        				  if (expMan.getLevelForExp(expMan.getCurrentExp()) >= Integer.parseInt(cost)) {
+        					  player.giveExpLevels(-Integer.parseInt(cost));
+        					  canbuy = true;
+        				  }
+        			  }
+        			  if (canbuy == true) {
+        				  if (use != -1) {
+        					  sign.setLine(3, "" + (use-1));
+        					  sign.update(true);
+        				  }
+        				  chat.setPlayerSuffix(player, sign.getLine(1));
+        				  player.sendMessage(ChatColor.GRAY+"Purchase of "+ChatColor.GREEN+sign.getLine(1)+ChatColor.GRAY+" for "+ChatColor.GREEN+sign.getLine(2)+ChatColor.GRAY+" was successful!");
+        			  }
+        			  else {
+        				  player.sendMessage(ChatColor.GRAY+"You do not have "+ChatColor.RED+sign.getLine(2)+ChatColor.GRAY+".");
+        			  }
+        		  }
+        		  
+        	  }
+          }
+        	  else {
+        		  player.sendMessage(ChatColor.RED+"You do not have permission to use this sign. If you think this is an error, please contact your server Administrator.");
+        	  }
+          }
+          
+          
+          
+          
+          
+          
           else if ((sign.getLine(0).equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.xpbank.text")))&&(this.getConfig().getBoolean("signs.types.xpbank.enabled"))) {
         	  if ((sign.getLine(3) == player.getName())&&(player.hasPermission("signranks.use.xpbank"))) {
         		  ExperienceManager expMan = new ExperienceManager(player);
@@ -796,8 +906,148 @@ public final class SignRanks extends JavaPlugin implements Listener {
     		  player.sendMessage(ChatColor.LIGHT_PURPLE+"Thanks for using SignRanksPlus+ by Empire92");
     	  }
     	  else if ((sign.getLine(0).equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.prefix.text")))&&(this.getConfig().getBoolean("signs.types.prefix.enabled"))) {
-    		  player.sendMessage(ChatColor.LIGHT_PURPLE+"Thanks for using SignRanksPlus+ by Empire92");
+			  if (chat.getPlayerPrefix(player) == sign.getLine(1)) {
+				  if (this.getConfig().getString("signs.types.prefix.refund").equalsIgnoreCase("false")) {
+					  player.sendMessage(ChatColor.RED+"This server does not let you return prefixes.");
+				  }
+				  else {
+				  if (player.isSneaking()) {
+					  if (this.getConfig().getString("signs.types.prefix.refund").equalsIgnoreCase("true")) {
+						 try {
+								 String cost = sign.getLine(2);
+					        	  if (cost.contains(" exp")) {
+					        		  costtype = 1;
+					        		  cost = cost.substring(0,cost.length() - 4);
+					        		  ExperienceManager expMan = new ExperienceManager(player);
+					        		  expMan.changeExp(Integer.parseInt(cost));
+					        	  }
+					        	  else if (cost.contains(" lvl")) {
+					        		  costtype = 2;
+					        		  cost = cost.substring(0,cost.length() - 4);
+					        		  player.giveExpLevels(Integer.parseInt(cost));
+					        	  }
+					        	  else { 
+					        		  cost = cost.substring(1,cost.length());
+					        		  EconomyResponse r = econ.depositPlayer(player.getName(), Integer.parseInt(cost));
+					        	  }		        	  
+					        	  player.sendMessage(ChatColor.GRAY+"You recieved your full refund of "+ChatColor.GREEN+sign.getLine(2)+ChatColor.GRAY+".");
+								  try {
+									  if (Integer.parseInt(sign.getLine(3)) >= 0) {
+										  sign.setLine(3, ""+(1+Integer.parseInt(sign.getLine(3))));
+										  sign.update(true);
+									  }
+								  }
+								  catch (Exception e) {
+									  
+								  }
+					        	  
+								  chat.setPlayerPrefix(player, chat.getGroupPrefix(player.getWorld().getName(),perms.getPrimaryGroup(player)));
+								  //remove prefix
+//							 }
+//							 else {
+//								 player.sendMessage(ChatColor.RED+"This sign does not let you return prefixes.");
+//							 }
+						 }
+						 catch (Exception e) {
+							 player.sendMessage(ChatColor.RED+"This sign does not let you return prefixes.");
+						 }
+					  }
+					  else {
+						  player.sendMessage(ChatColor.GRAY+"You returned your prefix "+ChatColor.GREEN+sign.getLine(1)+ChatColor.GRAY+".");
+						  try {
+							  if (Integer.parseInt(sign.getLine(3)) >= 0) {
+								  sign.setLine(3, ""+(1+Integer.parseInt(sign.getLine(3))));
+								  sign.update(true);
+							  }
+						  }
+						  catch (Exception e) {
+							  
+						  }
+						  chat.setPlayerPrefix(player, chat.getGroupPrefix(player.getWorld().getName(),perms.getPrimaryGroup(player)));
+					  }
+	    		  }
+	    		  else {
+	    			  player.sendMessage(ChatColor.GRAY+"Please "+ChatColor.RED+"crouch"+ChatColor.GRAY+" (shift) to return your prefix.");
+	    		  }
+				  }
+    		  }
+    		  else {
+    			  player.sendMessage(ChatColor.RED+"You cannot return a prefix you don't have.");
+    		  }  
     	  }
+    	  //TODO SUFFIX
+    	  else if ((sign.getLine(0).equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.suffix.text")))&&(this.getConfig().getBoolean("signs.types.suffix.enabled"))) {
+			  if (chat.getPlayerSuffix(player) == sign.getLine(1)) {
+				  if (this.getConfig().getString("signs.types.suffix.refund").equalsIgnoreCase("false")) {
+					  player.sendMessage(ChatColor.RED+"This server does not let you return suffixes.");
+				  }
+				  else {
+				  if (player.isSneaking()) {
+					  if (this.getConfig().getString("signs.types.suffix.refund").equalsIgnoreCase("true")) {
+						 try {
+								 String cost = sign.getLine(2);
+					        	  if (cost.contains(" exp")) {
+					        		  costtype = 1;
+					        		  cost = cost.substring(0,cost.length() - 4);
+					        		  ExperienceManager expMan = new ExperienceManager(player);
+					        		  expMan.changeExp(Integer.parseInt(cost));
+					        	  }
+					        	  else if (cost.contains(" lvl")) {
+					        		  costtype = 2;
+					        		  cost = cost.substring(0,cost.length() - 4);
+					        		  player.giveExpLevels(Integer.parseInt(cost));
+					        	  }
+					        	  else { 
+					        		  cost = cost.substring(1,cost.length());
+					        		  EconomyResponse r = econ.depositPlayer(player.getName(), Integer.parseInt(cost));
+					        	  }		        	  
+					        	  player.sendMessage(ChatColor.GRAY+"You recieved your full refund of "+ChatColor.GREEN+sign.getLine(2)+ChatColor.GRAY+".");
+								  try {
+									  if (Integer.parseInt(sign.getLine(3)) >= 0) {
+										  sign.setLine(3, ""+(1+Integer.parseInt(sign.getLine(3))));
+										  sign.update(true);
+									  }
+								  }
+								  catch (Exception e) {
+									  
+								  }
+					        	  
+								  chat.setPlayerSuffix(player, chat.getGroupSuffix(player.getWorld().getName(),perms.getPrimaryGroup(player)));
+								  //remove suffix
+//							 }
+//							 else {
+//								 player.sendMessage(ChatColor.RED+"This sign does not let you return suffixes.");
+//							 }
+						 }
+						 catch (Exception e) {
+							 player.sendMessage(ChatColor.RED+"This sign does not let you return suffixes.");
+						 }
+					  }
+					  else {
+						  player.sendMessage(ChatColor.GRAY+"You returned your suffix "+ChatColor.GREEN+sign.getLine(1)+ChatColor.GRAY+".");
+						  try {
+							  if (Integer.parseInt(sign.getLine(3)) >= 0) {
+								  sign.setLine(3, ""+(1+Integer.parseInt(sign.getLine(3))));
+								  sign.update(true);
+							  }
+						  }
+						  catch (Exception e) {
+							  
+						  }
+						  chat.setPlayerSuffix(player, chat.getGroupSuffix(player.getWorld().getName(),perms.getPrimaryGroup(player)));
+					  }
+	    		  }
+	    		  else {
+	    			  player.sendMessage(ChatColor.GRAY+"Please "+ChatColor.RED+"crouch"+ChatColor.GRAY+" (shift) to return your suffix.");
+	    		  }
+				  }
+    		  }
+    		  else {
+    			  player.sendMessage(ChatColor.RED+"You cannot return a suffix you don't have.");
+    		  }  
+    	  }
+    	  
+    	  //TODO DONE SUFFIX
     	  else if ((sign.getLine(0).equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.xpbank.text")))&&(this.getConfig().getBoolean("signs.types.xpbank.enabled"))) {
     		  if ((sign.getLine(3) == player.getName())&&(player.hasPermission("signranks.use.xpbank"))) {
     			  ExperienceManager expMan = new ExperienceManager(player);
@@ -819,8 +1069,15 @@ public final class SignRanks extends JavaPlugin implements Listener {
     			  }
     		  }
 			  int amount2 = Integer.parseInt(sign.getLine(1));
-			  if (Integer.parseInt(getConfig().getString("signs.types.xpbank.storage")) < (amount2 + amount))  {
-				  amount = Integer.parseInt(getConfig().getString("signs.types.xpbank.storage"))-amount2;
+			  int storage;
+			  try {
+				  storage = Integer.parseInt(getConfig().getString("signs.types.xpbank.storage."+perms.getPrimaryGroup(player)));
+			  }
+			  catch (Exception e) {
+				  storage = Integer.parseInt(getConfig().getString("signs.types.xpbank.storage.Default"));
+			  }
+			  if (storage < (amount2 + amount))  {
+				  amount = storage-amount2;
 			  }
     		  if (amount != 0) {
 			      expMan.changeExp(-amount);
@@ -939,8 +1196,14 @@ public final class SignRanks extends JavaPlugin implements Listener {
     	else if ((cmd.getName().equalsIgnoreCase("signranks"))||(cmd.getName().equalsIgnoreCase("sr"))) {
     	if (args.length > 0) {
 		if ((args[0].equalsIgnoreCase("reload"))){
-	    	timer.cancel();
-	    	timer.purge();
+			try {
+		    	timer.cancel();
+		    	timer.purge();
+			}
+			catch (Exception e) {
+				
+			}
+
 			this.reloadConfig();
 			this.saveDefaultConfig();
 	    	if (getConfig().getString("economy.salary.enabled").equalsIgnoreCase("true")) {

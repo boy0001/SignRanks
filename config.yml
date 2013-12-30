@@ -1,4 +1,4 @@
-version: 0.1.3
+version: 0.1.6
 signs:
 # Should we prevent signs from being destroyed?
   protect: true  
@@ -14,6 +14,11 @@ signs:
     prefix:
       enabled: true
       text: '[Prefix]'
+      refund: false
+    suffix:
+      enabled: true
+      text: '[Suffix]'
+      refund: false
     xpbank:
       cost: 5 lvl
       enabled: false
