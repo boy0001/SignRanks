@@ -1,0 +1,5 @@
+enabled: false
+elevation: console
+commands:
+- '{arg1}{arg2}{arg3}'
+text: '[CMDCON]'

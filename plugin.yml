@@ -1,13 +1,47 @@
 name: SignRanksPlus
 main: com.empcraft.SignRanks
-version: 0.1.6
+version: 0.3.0
+author: Empire92
+website: www.empcraft.com
+softdepend: [InSigns]
+depend: [Vault]
 commands:
+   if:
+      description: returns false or false depending on inputs (turn debug on if you want a message)
+   execute:
+      description: executes a function
+   eval:
+      description: evaluates an input (turn debug on if you want a message)
+   else:
+      description: basic else statement
+   endif:
+      description: basic end if statement
+   gvar:
+      description: manage global variables
    xpp:
       description: Transfer exp to another player.
-      permission: signranks.xpp
+      permission: signranks.xpp  
    sr:
       description: Alias for /signranks
       permission: signranks.help
+   se:
+      description: edit a sign
+      permission: signranks.signedit
+   signedit:
+      description: edit a sign
+      permission: signranks.signedit
+   sedit:
+      description: edit a sign
+      permission: signranks.signedit
+   schedule:
+      description: schedule a task
+      permission: signranks.schedule
    signranks:
       description: Basic SignRanksPlus command.
       permission: signranks.help
+   all:
+      description: Broadcasts a message (supports formatting)
+      permission: signranks.all
+   player:
+      description: Displays text to a player (supports formatting)
+      permission: signranks.player
