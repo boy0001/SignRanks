@@ -47,6 +47,8 @@ import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.material.MaterialData;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -67,7 +69,6 @@ public class SignRanks extends JavaPlugin implements Listener {
 	public boolean isenabled = false;
 	public int recursion = 0;
 	SignRanks plugin;
-	InSignsFeature isf;
 	
     
 		public String javascript(String line) {
@@ -235,13 +236,6 @@ public class SignRanks extends JavaPlugin implements Listener {
     }
     public String execute(String line, Player user, Player sender, Boolean elevation) {
     	recursion++;
-    	int debug;
-    	try {
-    		debug = getConfig().getInt("scripting.debug-level");
-    	}
-    	catch (Exception e) {
-    		debug = 0;
-    	}
     	try {
     	final Map<String, Object> locals = new HashMap<String, Object>();
     	locals.put("{var}", StringUtils.join(locals.keySet(),",").replace("{","").replace("}", ""));
@@ -281,6 +275,7 @@ public class SignRanks extends JavaPlugin implements Listener {
             				mytest+=mycmds[j]+";";
             			}
             			else {
+            				System.out.println("END "+mycmds[j]);
             			}
             			if ((depth2 == 0)||(j==mycmds.length-1)) {
             				if (cmdargs[1].contains(":")) {
@@ -339,16 +334,10 @@ public class SignRanks extends JavaPlugin implements Listener {
 	            		user = Bukkit.getPlayer(cmdargs[1]);
 	            		if (user==null) {
 	            			user = lastuser;
-	                		if (debug > 2) {
-	                  			msg(user,"Failed to set user: "+cmdargs[1]);
-	                  		}
 	            		}
             		}
             	}
             	catch (Exception e5) {
-            		if (debug > 2) {
-          			user.sendMessage("Failed to set user: "+cmdargs[1]);
-          		}
             	}
             }
             else if (cmdargs[0].equalsIgnoreCase("if")) {
@@ -358,9 +347,6 @@ public class SignRanks extends JavaPlugin implements Listener {
 					hasperm = testif(mycommand);
           	  }
           	  else {
-            		if (debug > 2) {
-          			msg(user,mycommand+" -> "+hasperm);
-          		}
           	  }
           	  depth++;
             }
@@ -373,9 +359,6 @@ public class SignRanks extends JavaPlugin implements Listener {
             		  hasperm = true;
             	  }
             	  if (user != null) {
-              		if (debug > 2) {
-            			msg(user,mycommand+" -> "+hasperm);
-            		}
             	  }
             	  }
               }
@@ -388,9 +371,6 @@ public class SignRanks extends JavaPlugin implements Listener {
             		  if (last==depth) {
             			  hasperm = true;
             			  if (user != null) {
-	              		if (debug > 2) {
-	              			msg(user,mycommand+" -> escaped from if/else block");
-	            		}
             		  }
             		  }
             	  }
@@ -401,16 +381,10 @@ public class SignRanks extends JavaPlugin implements Listener {
             	  try {
             	  globals.put("{"+evaluate(cmdargs[1],user,sender,elevation)+"}", evaluate(StringUtils.join(Arrays.copyOfRange(cmdargs, 2, cmdargs.length)," "),user,sender,elevation));
             	  if (user != null) {
-              		if (debug > 1) {
-              			msg(user,"global var "+cmdargs[1]+" -> "+cmdargs[2]);
-            		}
             	  }
             	  }
             	  catch (Exception e) {
             		  if (user != null) {
-	              		if (debug > 0) {
-	              			msg(user,mycommand+" -> invalid syntax");
-	            		}
             	  }
             	  }
             	  }
@@ -418,16 +392,10 @@ public class SignRanks extends JavaPlugin implements Listener {
             		  try {
             		  globals.remove("{"+cmdargs[1]+"}");
             		  if (user != null) {
-            		  if (debug > 1) {
-            			  msg(user,"removed global "+cmdargs[1]);
-	            		}
             		  }
             		  }
             		  catch (Exception e2) {
             			  if (user != null) {
-	              		if (debug > 0) {
-	              			msg(user,"failed to remove global "+cmdargs[1]);
-	            		}
             		  }
             		  }
             	  }
@@ -440,16 +408,10 @@ public class SignRanks extends JavaPlugin implements Listener {
             		  
             	  locals.put("{"+evaluate(cmdargs[1],user,sender,elevation)+"}", evaluate(StringUtils.join(Arrays.copyOfRange(cmdargs, 2, cmdargs.length)," "),user,sender,elevation));
             	  if (user != null) {
-              		if (debug > 1) {
-              			msg(user,"local var "+cmdargs[1]+" -> "+cmdargs[2]);
-            		}
             	  }
             	  }
             	  catch (Exception e) {
             		  if (user != null) {
-	              		if (debug > 0) {
-	              			msg(user,mycommand+" -> invalid syntax");
-	            		}
             	  }
             	  }
               }
@@ -457,16 +419,10 @@ public class SignRanks extends JavaPlugin implements Listener {
             		  try {
             		  locals.remove("{"+cmdargs[1]+"}");
             		  if (user != null) {
-            		  if (debug > 1) {
-            			  msg(user,"removed local "+cmdargs[1]);
-	            		}
             		  }
             		  }
             		  catch (Exception e2) {
             			  if (user != null) {
-	              		if (debug > 0) {
-	              			msg(user,"failed to remove local "+cmdargs[1]);
-	            		} 
             		  }
             		  }
             	  }
@@ -518,22 +474,7 @@ public class SignRanks extends JavaPlugin implements Listener {
 				 return mycommand.substring(7,mycommand.length());
 			 }
 			else {
-				boolean show = false;
-				try {
-					show = getConfig().getString("scripting.show-sender").equalsIgnoreCase("true");
-				}
-				catch (Exception e) {}
-				if (show) {
-					if (sender!=null) {
-						msg(user,colorise("&8[&2"+sender.getDisplayName()+"&8] "+evaluate(mycommand, user,sender,elevation)));
-					}
-					else {
-						msg(user,colorise("&8[&2Console&8] "+evaluate(mycommand, user,sender,elevation)));
-					}
-				}
-				else {
-					msg(user,colorise(evaluate(mycommand, user,sender,elevation)));
-				}
+				msg(user,colorise(evaluate(mycommand, user,sender,elevation)));
 			}
               }
 			else {
@@ -868,7 +809,8 @@ public class SignRanks extends JavaPlugin implements Listener {
     		return mylist[random.nextInt(mylist.length-1)];
     	}
     	else if (line.contains("{worldtype:")) {
-    		return ""+Bukkit.getWorld(mysplit[1]).getWorldType();
+    		Location loc = getloc(mysplit[0], user);
+    		return ""+loc.getWorld().getWorldType().getName();
     	}
     	else if (line.contains("{listreplace:")) {
     		String[] mylist = mysplit[1].split(",");
@@ -883,8 +825,12 @@ public class SignRanks extends JavaPlugin implements Listener {
     		}
     		return newlist.substring(0,newlist.length()-1);
     	}
-    	else if (line.contains("{replace:")) {
-    		return mysplit[1].replace(mysplit[2], mysplit[3]);
+    	else if (line.contains("{worldticks}")) {
+    		return Long.toString(user.getWorld().getTime());
+    	}
+    	else if (line.contains("{worldticks:")) {
+    		Location loc = getloc(mysplit[0], user);
+    		return Long.toString(loc.getWorld().getTime());
     	}
     	else if (line.contains("{time}")) {
     		Double time = user.getWorld().getTime() / 1000.0;
@@ -900,7 +846,8 @@ public class SignRanks extends JavaPlugin implements Listener {
     		return ""+hr+":"+min;
     	}
     	else if (line.contains("{time:")) {
-    		Double time = Bukkit.getWorld(mysplit[1]).getTime() / 1000.0;
+    		Location loc = getloc(mysplit[0], user);
+    		Double time = loc.getWorld().getTime() / 1000.0;
     		if (time>24) { time-=24; }
     		String hr = ""+time.intValue() + 6;
     		String min = ""+((int) (60*(time%1)));
@@ -929,7 +876,8 @@ public class SignRanks extends JavaPlugin implements Listener {
     	}
     	else if (line.contains("{time12:")) {
     		String ampm = " AM";
-    		Double time = Bukkit.getWorld(mysplit[1]).getTime() / 1000.0;
+    		Location loc = getloc(mysplit[0], user);
+    		Double time = loc.getWorld().getTime() / 1000.0;
     		if (time>24) { time-=24; }
     		if (time+6>12) {
     			ampm = " PM";
@@ -942,11 +890,15 @@ public class SignRanks extends JavaPlugin implements Listener {
     		}
     		return ""+hr+":"+min+ampm;
     	}
+    	else if (line.contains("{replace:")) {
+    		return mysplit[1].replace(mysplit[2], mysplit[3]);
+    	}
     	else if (line.contains("{config:")) {
     		return plugin.getConfig().getString(mysplit[1]);
     	}
     	else if (line.contains("{structures:")) {
-    		return ""+Bukkit.getWorld(mysplit[1]).canGenerateStructures();
+    		Location loc = getloc(mysplit[0], user);
+    		return loc.getWorld().canGenerateStructures()+"";
     	}
     	else if (line.contains("{structures}")) {
     		return ""+user.getWorld().canGenerateStructures();
@@ -954,35 +906,48 @@ public class SignRanks extends JavaPlugin implements Listener {
     	else if (line.contains("{autosave}")) {
     		return ""+user.getWorld().isAutoSave();
     	}
+    	else if (line.contains("{autosave:")) {
+    		Location loc = getloc(mysplit[0], user);
+    		return loc.getWorld().isAutoSave()+"";
+    	}
     	else if (line.contains("{animals:")) {
-    		return ""+Bukkit.getWorld(mysplit[1]).getAllowAnimals();
+    		Location loc = getloc(mysplit[0], user);
+    		return loc.getWorld().getAllowAnimals()+"";
     	}
     	else if (line.contains("{animals}")) {
     		return ""+user.getWorld().getAllowAnimals();
     	}
     	else if (line.contains("{monsters:")) {
-    		return ""+Bukkit.getWorld(mysplit[1]).getAllowMonsters();
+    		Location loc = getloc(mysplit[0], user);
+    		return loc.getWorld().getAllowMonsters()+"";
     	}
     	else if (line.contains("{monsters}")) {
     		return ""+user.getWorld().getAllowMonsters();
     	}
     	else if (line.contains("{online:")) {
-    		return ""+Bukkit.getWorld(mysplit[1]).getPlayers();
+    		Location loc = getloc(mysplit[0], user);
+    		return ""+loc.getWorld().getPlayers();
+    	}
+    	else if (line.contains("{colors}")) {
+    		return "&1,&2,&3,&4,&5,&6,&7,&8,&9,&0,&a,&b,&c,&d,&e,&f,&r,&l,&m,&n,&o,&k";
     	}
     	else if (line.contains("{difficulty:")) {
-    		return ""+Bukkit.getWorld(mysplit[1]).getDifficulty().name();
+    		Location loc = getloc(mysplit[0], user);
+    		return loc.getWorld().getDifficulty().toString();
     	}
     	else if (line.contains("{difficulty}")) {
     		return ""+user.getWorld().getDifficulty().name();
     	}
-    	else if (line.contains("{weatherduration:")) {
-    		return ""+Bukkit.getWorld(mysplit[1]).getWeatherDuration();
-    	}
     	else if (line.contains("{weatherduration}")) {
     		return ""+user.getWorld().getWeatherDuration();
     	}
+    	else if (line.contains("{weatherduration:")) {
+    		Location loc = getloc(mysplit[0], user);
+    		return ""+loc.getWorld().getWeatherDuration();
+    	}
     	else if (line.contains("{environment:")) {
-    		return ""+Bukkit.getWorld(mysplit[1]).getEnvironment().name();
+    		Location loc = getloc(mysplit[0], user);
+    		return loc.getWorld().getEnvironment().toString();
     	}
     	else if (line.contains("{environment}")) {
     		return ""+user.getWorld().getEnvironment().name();
@@ -1010,19 +975,22 @@ public class SignRanks extends JavaPlugin implements Listener {
     		return ""+elevation;
     	}
     	else if (line.contains("{gamerules:")) {
-    		return StringUtils.join(Bukkit.getWorld(mysplit[1]).getGameRules(),",");
+    		Location loc = getloc(mysplit[0], user);
+    		return StringUtils.join(loc.getWorld().getGameRules(),",");
     	}
     	else if (line.contains("{gamerules}")) {
     		return StringUtils.join(user.getWorld().getGameRules(),",");
     	}
     	else if (line.contains("{seed:")) {
-    		return ""+Bukkit.getWorld(mysplit[1]).getSeed();
+    		Location loc = getloc(mysplit[0], user);
+    		return ""+loc.getWorld().getSeed();
     	}
     	else if (line.contains("{seed}")) {
     		return ""+user.getWorld().getSeed();
     	}
     	else if (line.contains("{spawn:")) {
-    		return ""+Bukkit.getWorld(mysplit[1]).getSpawnLocation().getX()+","+Bukkit.getWorld(mysplit[1]).getSpawnLocation().getY()+","+Bukkit.getWorld(mysplit[1]).getSpawnLocation().getZ();
+    		Location loc = getloc(mysplit[0], user);
+    		return loc.getWorld().getName()+","+loc.getWorld().getSpawnLocation().getX()+","+loc.getWorld().getSpawnLocation().getY()+","+loc.getWorld().getSpawnLocation().getZ();
     	}
     	else if (line.contains("{difficulty}")) {
     		return ""+user.getWorld().getSpawnLocation();
@@ -1132,14 +1100,6 @@ public class SignRanks extends JavaPlugin implements Listener {
     		}
     		return mystr;
     	}
-    	else if (line.equals("{kills}")) {
-    		try {
-    		return ""+kills.get(user.getName());
-    		}
-    		catch (Exception e5) {
-    			return "0";
-    		}
-    	}
     	else if (line.equals("{plugins}")) {
     		Plugin[] myplugins = getServer().getPluginManager().getPlugins();
     		String mystr = "";
@@ -1205,8 +1165,22 @@ public class SignRanks extends JavaPlugin implements Listener {
     			}
     			return "false";
     		}
+    		else if (line.equals("{storm:")) {
+    			Location loc = getloc(mysplit[0], user);
+    			if (loc.getWorld().hasStorm()) {
+    				return "true";
+    			}
+    			return "false";
+    		}
     		else if (line.equals("{thunder}")) {
     			if (user.getWorld().isThundering()) {
+    				return "true";
+    			}
+    			return "false";
+    		}
+    		else if (line.equals("{thunder:")) {
+    			Location loc = getloc(mysplit[0], user);
+    			if (loc.getWorld().isThundering()) {
     				return "true";
     			}
     			return "false";
@@ -1223,6 +1197,9 @@ public class SignRanks extends JavaPlugin implements Listener {
     		else if (line.equals("{world}")) {
     			return user.getWorld().getName();
     		}
+        	else if (line.contains("{world:")) {
+        		return Bukkit.getWorld(mysplit[1]).getName();
+        	}
     		else if (line.equals("{x}")) {
     			return String.valueOf(Math.round(user.getLocation().getX()));
     		}
@@ -1309,6 +1286,10 @@ public class SignRanks extends JavaPlugin implements Listener {
     		else if (line.equals("{biome}")) {
     			return user.getWorld().getBiome(user.getLocation().getBlockX(), user.getLocation().getBlockZ()).toString();
     		}
+    		else if (line.equals("{biome:")) {
+    			Location loc = getloc(mysplit[0], user);
+    			return loc.getWorld().getBiome(loc.getBlockX(), loc.getBlockZ()).toString();
+    		}
     		else if (line.equals("{health}")) {
     			return String.valueOf(user.getHealth());
     		}
@@ -1320,12 +1301,12 @@ public class SignRanks extends JavaPlugin implements Listener {
         }
     	Set<String> custom = null;
     	FileConfiguration myconfig = plugin.getConfig();
-		custom = myconfig.getConfigurationSection("scripting.custom-placeholders").getKeys(false);
+		custom = myconfig.getConfigurationSection("signs.placeholders").getKeys(false);
     	if (custom.size()>0) {
     		for (String mycustom:custom) {
     			
     			if (line.contains("{"+mycustom+":")||line.equals("{"+mycustom+"}")) {
-	    			List<String> current = myconfig.getStringList("scripting.custom-placeholders."+mycustom);
+	    			List<String> current = myconfig.getStringList("signs.placeholders."+mycustom);
 	    			String mycommands = StringUtils.join(current,";");
 	    			for(int i = 0; i < mysplit.length; i++) {
 	    				mycommands.replace("{arg"+i+"}", mysplit[i]);
@@ -1457,7 +1438,38 @@ public class SignRanks extends JavaPlugin implements Listener {
     	}
     	return mystring;
     }
-    
+    public Location getloc(String string,Player user) {
+		if (string.contains(",")==false) {
+			Player player = Bukkit.getPlayer(string);
+			if (player!=null) {
+				return player.getLocation();
+			}
+			else {
+				World world = Bukkit.getWorld(string);
+				if (world!=null) {
+					return world.getSpawnLocation();
+				}
+			}
+			
+		}
+		else {
+			String[] mysplit = string.split(",");
+			World world = Bukkit.getWorld(mysplit[0]);
+			if (world!=null) {
+				double x;double y;double z;
+				if (mysplit.length==4) {
+					try { x = Double.parseDouble(mysplit[1]);} catch (Exception e) {x=world.getSpawnLocation().getX();}
+					try { y = Double.parseDouble(mysplit[2]);} catch (Exception e) {y=world.getSpawnLocation().getY();}
+					try { z = Double.parseDouble(mysplit[3]);} catch (Exception e) {z=world.getSpawnLocation().getZ();}
+					return new Location(world, x, y, z);
+				}
+			}
+			else {
+				return null;
+			}
+		}
+		return null;
+	}
     public boolean testif(String mystring) {
     	String[] args;
     	if (mystring.substring(0, 2).equalsIgnoreCase("if")) {
@@ -1720,58 +1732,6 @@ public class SignRanks extends JavaPlugin implements Listener {
 		@Override
 	    public void run () {
 			if (counter0<1000) {
-				if (isenabled) {
-					if (counter0<list.size()) {
-						try {
-						Location loc = list.get(counter0);
-						Player player = Bukkit.getPlayer(players.get(counter0));
-						if (player!=null) {
-						if (loc.getWorld().equals(player.getLocation().getWorld())) {
-							if (loc.getChunk().isLoaded()==true) {
-								Sign sign = (Sign) (loc.getBlock().getState());
-								if (sign!=null) {
-									double dist = loc.distanceSquared(player.getLocation());
-					            if (dist<96) {
-					            	isf.sendSignChange(player,sign);
-//					            	System.out.println("worked");
-								}
-					            else if (dist > (Bukkit.getViewDistance()*24)*(Bukkit.getViewDistance()*24)) {
-									list.remove(counter0);
-									players.remove(counter0);
-//									System.out.println("too far");
-					            }
-								}
-								else {
-									list.remove(counter0);
-									players.remove(counter0);
-//									System.out.println("null sign");
-								}
-							}
-							else {
-								list.remove(counter0);
-								players.remove(counter0);
-//								System.out.println("unloaded chunk");
-							}
-						}
-						else {
-							list.remove(counter0);
-							players.remove(counter0);
-//							System.out.println("wrong map");
-							}
-						}
-						else {
-							list.remove(counter0);
-							players.remove(counter0);
-//							System.out.println("null player");
-						}
-					}
-					catch (Exception e) {
-						list.remove(counter0);
-						players.remove(counter0);
-//						System.out.println("err "+e);
-					}
-					}
-				}
 				counter0++;
 			}
 			else {
@@ -1883,9 +1843,11 @@ public class SignRanks extends JavaPlugin implements Listener {
         File f8 = new File(getDataFolder() + File.separator+"scripts"+File.separator+"example.yml");
         if(f8.exists()!=true) {  saveResource("scripts"+File.separator+"example.yml", false); }
         
+        saveResource("idlist.yml", true);
+        //TODO update checking.
         
     	/* - TODO setuser setelevation setworld (DEFAULT WORLD = USER)
-	       - TODO proper functional place-dholders
+	       - TODO proper functional place-holders
 		user.getWorld().getDifficulty();
 		user.getWorld().playSound(arg0, arg1, arg2, arg3);
 		user.getWorld().playEffect(arg0, arg1, arg2, arg3);
@@ -1920,7 +1882,6 @@ public class SignRanks extends JavaPlugin implements Listener {
 		
 		*/
         
-        //TODO LOAD CUSTOM SIGNS
         File f1 = new File(getDataFolder() + File.separator + "scripts");
         File[] mysigns = f1.listFiles();
         for (int i = 0; i < mysigns.length; i++) {
@@ -1949,20 +1910,7 @@ public class SignRanks extends JavaPlugin implements Listener {
 	        		}
         		}
         	}
-        }
-        
-        Plugin insignsPlugin = getServer().getPluginManager().getPlugin("InSigns");
-        if((insignsPlugin != null) && insignsPlugin.isEnabled()) {
-        	if (getConfig().getBoolean("individual-signs.auto-update")&&getServer().getPluginManager().getPlugin("InSignsPlus")==null) {
-        		isenabled = true;
-        	}
-        	isf = new InSignsFeature(insignsPlugin,this);
-            getServer().getPluginManager().registerEvents(isf,this);
-            System.out.println("Plugin 'InSigns' found. Using it now.");
-        } else {
-            System.out.println("Plugin 'InSigns' not found. Additional sign features disabled.");
-        }
-        
+        }        
         getConfig().options().copyDefaults(true);
         
         
@@ -2003,6 +1951,10 @@ public class SignRanks extends JavaPlugin implements Listener {
         options.put("signs.types.xpbank.cost","5 lvl");
         options.put("signs.types.xpbank.storage.Default",5000);
         options.put("signs.types.xpbank.storage.Builder",10000);
+        
+        options.put("signs.types.shop.enabled",true);
+        options.put("signs.types.shop.text","[Shop]");
+        options.put("signs.types.shop.storage",2304);
        
         
         options.put("economy.symbol","$");
@@ -2087,7 +2039,7 @@ public class SignRanks extends JavaPlugin implements Listener {
 	    	   String msg = evaluate(this.getConfig().getString("scripting.replace-chat")+""+event.getMessage(),event.getPlayer(),event.getPlayer(),false);
 	       		msg(null,msg);
 	       		for(Player user:getServer().getOnlinePlayers()){
-	       			msg = evaluate(this.getConfig().getString("scripting.replace-chat"),event.getPlayer(),event.getPlayer(),false)+evaluate(""+event.getMessage(),user,event.getPlayer(),false);
+	       			msg = evaluate(this.getConfig().getString("scripting.replace-chat").replace("{line}",event.getMessage()),user,event.getPlayer(),false);
 	       			if (msg.length()>150) {
 	       				msg = msg.substring(0,150);
 	       			}
@@ -2102,6 +2054,128 @@ public class SignRanks extends JavaPlugin implements Listener {
 	       }
        }
 	 }
+	 
+	 
+	 public Object[] LevensteinDistance(String string) {
+		 	Object[] toreturn = new Object[2];
+		 	try {
+		 		toreturn[0] = new ItemStack(Integer.parseInt(string));
+		 		toreturn[1] = Material.getMaterial(Integer.parseInt(string)).toString();
+	    		return  toreturn;
+	    	}
+	    	catch (Exception e) {
+	    		
+	    	}
+		 	System.out.println("0.0");
+	    	string = StringUtils.replace(string.toString(), " ", "_").toUpperCase();
+	    	Material[] materials = Material.values();
+			int smallest = -1;
+			String materialname = null;
+	    	ItemStack lastmaterial = null;
+	    	System.out.println("0.1");
+			File yamlFile = new File(getDataFolder()+File.separator+"idlist.yml");
+			System.out.println("0.2");
+			YamlConfiguration yaml = YamlConfiguration.loadConfiguration(yamlFile);
+			System.out.println("0.3");
+			System.out.println(""+YamlConfiguration.loadConfiguration(yamlFile).get("test"));
+			System.out.println("0.4");
+			System.out.println(""+yaml.get("test1.test2"));
+			System.out.println("0.5");
+			System.out.println(""+yaml.get("test1.test3"));
+			System.out.println("0.6");
+			System.out.println(""+yaml.get("test.test_4"));
+			System.out.println("0.7");
+			Set<String> ids = yaml.getConfigurationSection("item-ids").getKeys(false);
+			System.out.println("0.8");
+			try {
+				toreturn[1] = ""+yaml.getString("item-ids."+string.replace(":","-"));
+				toreturn[0] = new ItemStack(Integer.parseInt(string.split(":")[0]),1, Short.parseShort(string.split(":")[1]));
+				System.out.println("FOUND "+"item-ids."+string.replace(":","-")+ " | "+yaml.getString("item-ids."+string.replace(":","-"))+" | "+yaml.getString("item-ids.1"));
+				return toreturn;
+			}
+			catch (Exception e) {
+				if (string.contains(":")) {
+					try {
+						toreturn[1] = Integer.parseInt(string.split(":")[0])+":"+Integer.parseInt(string.split(":")[1]);
+						toreturn[0] = new ItemStack(Integer.parseInt(string.split(":")[0]),1, Short.parseShort(string.split(":")[1]));
+						System.out.println("NOT FOUND "+string);
+						return toreturn;
+					}
+					catch (Exception e2) {
+						
+					}
+				}
+			}
+			System.out.println("1");
+			for (String current:ids) {
+				String itemname = yaml.getString("item-ids."+current);
+				System.out.println(itemname);
+				if (smallest == -1) {
+					lastmaterial = new ItemStack(Material.AIR);
+					smallest = 100;
+				}
+				else {
+					int distance = StringUtils.getLevenshteinDistance(string.toUpperCase(), itemname.toUpperCase());
+					if (itemname.contains(string)) {
+						distance = StringUtils.getLevenshteinDistance(string.toUpperCase(), itemname.toUpperCase())-4;
+						if (distance<smallest) {
+							if (current.contains("-")) {
+								lastmaterial = new ItemStack(Integer.parseInt(current.split("-")[0]),1, Short.parseShort(current.split("-")[1]));
+							}
+							else {
+								lastmaterial = new ItemStack(Integer.parseInt(current),1, Short.parseShort("0"));
+							}
+							smallest = distance;
+							materialname=itemname;
+						}
+					}
+					else {
+						if (distance<smallest) {
+							if (current.contains("-")) {
+								lastmaterial = new ItemStack(Integer.parseInt(current.split("-")[0]),1, Short.parseShort(current.split("-")[1]));
+							}
+							else {
+								lastmaterial = new ItemStack(Integer.parseInt(current),1, Short.parseShort("0"));
+							}
+							materialname=itemname;
+							smallest = distance;
+						}
+					}
+				}
+			}
+			System.out.println("2");
+	    	for (Material mymaterial:materials) {
+	    		String current = mymaterial.toString();
+	    		if (smallest == -1) {
+	    			lastmaterial = new ItemStack(mymaterial);
+	    			materialname=mymaterial.toString();
+	    			smallest = 100;
+	    		}
+	    		else {
+	    			int distance;
+	    			if (current.contains(string)) {
+	    				distance = StringUtils.getLevenshteinDistance(string.toUpperCase(), current)-4;
+	    				if (distance==-1) {
+	    					distance = 0;
+	    				}
+	    			}
+	    			else {
+	    				distance = StringUtils.getLevenshteinDistance(string.toUpperCase(), current)+Math.abs(string.length()-current.length());
+	    			}
+	    			if (distance<smallest) {
+	    				materialname=mymaterial.toString();
+	    				smallest = distance;
+	    				lastmaterial = new ItemStack(mymaterial);
+	    			}
+	    		}
+	    	}
+	    	System.out.println("3");
+	    	toreturn[0] = lastmaterial;
+	    	toreturn[1] = materialname;
+	    	System.out.println("4");
+	    	return toreturn;
+	    }
+	 
 	 @EventHandler
 	 public void blockSignBreak(BlockBreakEvent event) {
 		 if (this.getConfig().getString("signs.protect").equalsIgnoreCase("true")) {
@@ -2109,7 +2183,7 @@ public class SignRanks extends JavaPlugin implements Listener {
 		 if (checkperm(player,"signranks.destroy.*")==false) {
 	        if(event.getBlock().getState() instanceof Sign) {
 	            Sign sign = (Sign) event.getBlock().getState();  
-	            if (((this.getConfig().getString("signs.types.perm.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.perm.text"))))||((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.extend.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.extend.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.suffix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.suffix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text"))))) {              
+	            if (((this.getConfig().getString("signs.types.perm.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.perm.text"))))||((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.extend.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.extend.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.suffix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.suffix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text")))) || ((this.getConfig().getString("signs.types.shop.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.shop.text"))))) {              
 	            	msg(player,ChatColor.LIGHT_PURPLE+"You broke a sign :O");
 	                if ((sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))&&(checkperm(player,"signranks.destroy.promote")==false)) {
 		            	event.setCancelled(true);
@@ -2131,8 +2205,8 @@ public class SignRanks extends JavaPlugin implements Listener {
 		            	event.setCancelled(true);
 		                msg(player,ChatColor.GRAY+getmsg("REQ1")+" "+ChatColor.RED+"signranks.destroy.inherit");
 	                }
-	                else if (((sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text")))&&(checkperm(player,"signranks.destroy.xpbank")||(sign.getLine(3).equalsIgnoreCase(player.getName()))))) {
-	                	if (sign.getLine(3).equalsIgnoreCase(player.getName())) {
+	                else if (((sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text")))&&(checkperm(player,"signranks.destroy.xpbank")||(player.getName().toLowerCase().contains(sign.getLine(3).toLowerCase()))))) {
+	                	if (player.getName().toLowerCase().contains(sign.getLine(3).toLowerCase())) {
 		            		ExperienceManager expMan = new ExperienceManager(player);
 		            		expMan.changeExp(Integer.parseInt(sign.getLine(1)));
 		            		String msg = "";
@@ -2157,6 +2231,45 @@ public class SignRanks extends JavaPlugin implements Listener {
 		            		  	event.setCancelled(true);
 		            	}        	
 	                }
+	                else if (((sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.shop.text")))&&(checkperm(player,"signranks.destroy.shop")||(player.getName().toLowerCase().contains(sign.getLine(3).toLowerCase()))))) {
+	                	String items = sign.getLine(0).replace(" - §1"+this.getConfig().getString("signs.types.shop.text"), "");
+	                	if (player.getName().toLowerCase().contains(sign.getLine(3).toLowerCase())) {
+		            		String msg = "";
+		            		if (items!="0") {
+		            			try {
+		            			msg = ChatColor.GRAY+": "+ChatColor.GREEN+"+"+items+" "+sign.getLine(1);
+		            			int num = Integer.parseInt(items);
+		            			System.out.println("5");
+		            			Object[] iteminfo = LevensteinDistance(sign.getLine(1));
+		            			System.out.println("6");
+		            			System.out.println(" | "+iteminfo);
+		            			System.out.println("6.1");
+		            			ItemStack itemstack = new ItemStack(((ItemStack) iteminfo[0]).getType(), num,((ItemStack) iteminfo[0]).getDurability());
+		            			player.getWorld().dropItemNaturally(sign.getLocation(), itemstack);
+		            			}
+		            			catch (Exception e) {
+		            				msg(player,"&7Error Code: "+e.getMessage()+"\n&4An error occured when trying to return your items&7 - please contact one of the staff.");
+		            				event.setCancelled(true);
+		            			}
+		            		}
+		            		sign.setLine(1,"0");
+		            		sign.update(true);
+		            		msg(player,ChatColor.GRAY+getmsg("DESTROY1")+msg+ChatColor.GRAY+".");
+		            	}
+		            	else if (checkperm(player,"signranks.destroy.shop")) {
+		            		if (sign.getLine(1)!="0") {
+		            			msg(player,ChatColor.BLUE+sign.getLine(3)+ChatColor.GRAY+" "+getmsg("DESTROY2")+" "+ChatColor.RED+items+" "+sign.getLine(1)+ChatColor.GRAY+".");
+		            		}
+		            		else {
+		            			msg(player,ChatColor.GRAY+getmsg("DESTROY1") +ChatColor.RED+ getmsg("DESTROY4") + ChatColor.GRAY+ getmsg("DESTROY5"));
+		            		}
+		            		
+		            	}
+		            	else {
+            		  		msg(player,ChatColor.GRAY+getmsg("REQ1")+" "+ChatColor.RED+"signranks.destroy.shop");
+	            		  	event.setCancelled(true);
+		            	}        	
+	                }
 	                else {
 	                	event.setCancelled(true);
 	                }
@@ -2165,31 +2278,31 @@ public class SignRanks extends JavaPlugin implements Listener {
 	        else {
 	        if(event.getBlock().getRelative(BlockFace.NORTH, 1).getTypeId() == 68) {
 	            Sign sign = (Sign) event.getBlock().getRelative(BlockFace.NORTH, 1).getState();
-	            if (((this.getConfig().getString("signs.types.perm.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.perm.text"))))||((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.extend.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.extend.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.suffix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.suffix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text"))))) {
+	            if (((this.getConfig().getString("signs.types.perm.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.perm.text"))))||((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.extend.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.extend.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.suffix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.suffix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text")))) || ((this.getConfig().getString("signs.types.shop.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.shop.text"))))) {
 	            	event.setCancelled(true);
 	            }
 	        }
 	        if(event.getBlock().getRelative(BlockFace.EAST, 1).getTypeId() == 68) {
 	            Sign sign = (Sign) event.getBlock().getRelative(BlockFace.EAST, 1).getState();
-	            if (((this.getConfig().getString("signs.types.perm.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.perm.text"))))||((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.extend.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.extend.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.suffix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.suffix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text"))))) {
+	            if (((this.getConfig().getString("signs.types.perm.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.perm.text"))))||((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.extend.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.extend.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.suffix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.suffix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text")))) || ((this.getConfig().getString("signs.types.shop.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.shop.text"))))) {
 	            	event.setCancelled(true);
 	            }
 	        }
 	        if(event.getBlock().getRelative(BlockFace.SOUTH, 1).getTypeId() == 68) {
 	            Sign sign = (Sign) event.getBlock().getRelative(BlockFace.SOUTH, 1).getState();
-	            if (((this.getConfig().getString("signs.types.perm.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.perm.text"))))||((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.extend.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.extend.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.suffix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.suffix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text"))))) {
+	            if (((this.getConfig().getString("signs.types.perm.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.perm.text"))))||((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.extend.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.extend.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.suffix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.suffix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text")))) || ((this.getConfig().getString("signs.types.shop.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.shop.text"))))) {
 	            	event.setCancelled(true);
 	            }
 	        }
 	        if(event.getBlock().getRelative(BlockFace.WEST, 1).getTypeId() == 68) {
 	            Sign sign = (Sign) event.getBlock().getRelative(BlockFace.WEST, 1).getState();
-	            if (((this.getConfig().getString("signs.types.perm.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.perm.text"))))||((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.extend.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.extend.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.suffix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.suffix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text"))))) {
+	            if (((this.getConfig().getString("signs.types.perm.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.perm.text"))))||((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.extend.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.extend.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.suffix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.suffix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text")))) || ((this.getConfig().getString("signs.types.shop.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.shop.text"))))) {
 	            	event.setCancelled(true);
 	            }
 	        }
 	        if(event.getBlock().getRelative(BlockFace.UP, 1).getTypeId() == 63) {
 	            Sign sign = (Sign) event.getBlock().getRelative(BlockFace.UP, 1).getState();
-	            if (((this.getConfig().getString("signs.types.perm.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.perm.text"))))||((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.extend.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.extend.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.suffix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.suffix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text"))))) {
+	            if (((this.getConfig().getString("signs.types.perm.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.perm.text"))))||((this.getConfig().getString("signs.types.promote.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.promote.text")))) || ((this.getConfig().getString("signs.types.extend.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.extend.text")))) || ((this.getConfig().getString("signs.types.prefix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.prefix.text")))) || ((this.getConfig().getString("signs.types.suffix.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.suffix.text")))) || ((this.getConfig().getString("signs.types.inherit.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.inherit.text")))) || ((this.getConfig().getString("signs.types.xpbank.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.xpbank.text")))) || ((this.getConfig().getString("signs.types.shop.enabled").equalsIgnoreCase("true"))&&(sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.shop.text"))))) {
 	            	event.setCancelled(true);
 	            }
 	        }
@@ -2378,6 +2491,72 @@ public class SignRanks extends JavaPlugin implements Listener {
 			  	 }
 			}
 		}
+		else if (((line1.equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.shop.text"))) || (line1.equalsIgnoreCase(this.getConfig().getString("signs.types.shop.text"))))&&(this.getConfig().getBoolean("signs.types.shop.enabled"))) {
+			type2 = this.getConfig().getString("signs.types.shop.text");
+			if (checkperm(player,"signranks.create.shop")) {
+				System.out.println("5.1");
+				Object[] materialinfo = LevensteinDistance(event.getLine(1));
+    			System.out.println(" | "+materialinfo[0].toString()+" | "+materialinfo[1].toString());
+    			System.out.println("5.10");
+				System.out.println("5.2");
+				System.out.println(materialinfo);
+				System.out.println("5.3");
+				if (event.getLine(1).trim().equals("")) {
+					msg(player,"PLACEHOLDER - trim"+event.getLine(1));
+					error = true;
+				}
+				else if (((ItemStack) materialinfo[0]).getType().equals(Material.AIR)) {
+					msg(player,"PLACEHOLDER - air");
+					error = true;
+				}
+				else {
+					try {
+						int cost;
+						if (event.getLine(2).contains(" exp")) {
+							cost = Integer.parseInt(event.getLine(2).substring(0,event.getLine(2).length() - 4));
+						}
+						else if (event.getLine(2).contains(" lvl")) {
+							cost = Integer.parseInt(event.getLine(2).substring(0,event.getLine(2).length() - 4));
+						}
+						else {
+							cost = Integer.parseInt(event.getLine(2).substring(1));
+						}
+						if (cost < 0) {
+							error = true;
+							msg(player,"PLACEHOLDER - cost cannot be negative");
+						}
+						msg(player,"Worked");
+						event.setLine(0, "0 - §1" + type2);
+						msg(player,"1");
+						msg(player,"1"+materialinfo[1]);
+						msg(player,"1.1");
+						if (((String) materialinfo[1]).length()>16) {
+							materialinfo[1] = ((ItemStack) materialinfo[0]).getTypeId()+":"+((ItemStack) materialinfo[0]).getDurability();
+						}
+						msg(player,"2");
+						event.setLine(1, (String) materialinfo[1]);
+						msg(player,"3");
+						event.setLine(3, player.getName());
+						msg(player,"4");
+					}
+					catch (Exception e) {
+						error = true;
+						msg(player,"PLACEHOLDER - error on line 3 with cost "+e.getMessage());
+					}
+				}
+		  		
+			}
+			else {
+				hasperm = false;
+				error = true;
+			}
+			System.out.println("6");
+		}
+		
+		
+		
+		
+		
 		if ((hasperm)&&(type2==this.getConfig().getString("signs.types.xpbank.text"))) {
 			event.setLine(0, "§1" + type2);
 			event.setLine(1, "0");
@@ -2387,6 +2566,15 @@ public class SignRanks extends JavaPlugin implements Listener {
 		else if ((hasperm)&&(type2==this.getConfig().getString("signs.types.extend.text"))) {
 			msg(player,ChatColor.GRAY+getmsg("CREATE1")+" "+ChatColor.GREEN+type2+ChatColor.GRAY+" "+getmsg("CREATE2")+".");
 			event.setLine(0, "§1" + type2);
+		}
+		else if ((type2==this.getConfig().getString("signs.types.shop.text"))) {
+			if (error) {
+				event.setLine(0, "§4" + type2);
+				msg(player,"PLACEHOLDER - FAILED to create a [SHOP] sign. USE etc...");
+			}
+			else {
+				msg(player,"PLACEHOLDER - created a [SHOP] sign");
+			}
 		}
 		else if ((hasperm)&&(type2!="")&&(error==false)) {
 			try {
@@ -2461,6 +2649,28 @@ public class SignRanks extends JavaPlugin implements Listener {
 		  		event.setLine(0, "§4" + type2);
 		  	  }
     }
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
 		else if (type2!="") {
 			if (error) {
 				msg(player,ChatColor.GRAY+getmsg("ERROR8")+" "+ChatColor.RED+getConfig().getString("signs.types.xpbank.cost")+ChatColor.GRAY+" "+getmsg("ERROR9")+".");
@@ -2470,7 +2680,31 @@ public class SignRanks extends JavaPlugin implements Listener {
 					
 				}
 				else {
-					msg(player,ChatColor.GRAY+getmsg("REQ1")+" "+ChatColor.RED+"signranks.create.xpbank");
+					if (type2.equals(this.getConfig().getString("signs.types.xpbank.text"))) {
+						msg(player,ChatColor.GRAY+getmsg("REQ1")+" "+ChatColor.RED+"signranks.create.xpbank");
+					}
+					else if (type2.equals(this.getConfig().getString("signs.types.promote.text"))) {
+						msg(player,ChatColor.GRAY+getmsg("REQ1")+" "+ChatColor.RED+"signranks.create.promote");
+					}
+					else if (type2.equals(this.getConfig().getString("signs.types.inherit.text"))) {
+						msg(player,ChatColor.GRAY+getmsg("REQ1")+" "+ChatColor.RED+"signranks.create.inherit");
+					}
+					else if (type2.equals(this.getConfig().getString("signs.types.perm.text"))) {
+						msg(player,ChatColor.GRAY+getmsg("REQ1")+" "+ChatColor.RED+"signranks.create.perm");
+					}
+					else if (type2.equals(this.getConfig().getString("signs.types.prefix.text"))) {
+						msg(player,ChatColor.GRAY+getmsg("REQ1")+" "+ChatColor.RED+"signranks.create.prefix");
+					}
+					else if (type2.equals(this.getConfig().getString("signs.types.suffix.text"))) {
+						msg(player,ChatColor.GRAY+getmsg("REQ1")+" "+ChatColor.RED+"signranks.create.suffix");
+					}
+					else if (type2.equals(this.getConfig().getString("signs.types.shop.text"))) {
+						msg(player,ChatColor.GRAY+getmsg("REQ1")+" "+ChatColor.RED+"signranks.create.shop");
+					}
+					else {
+						msg(player,ChatColor.GRAY+getmsg("REQ1")+" "+ChatColor.RED+"No permission");
+					}
+					
 				}
 			}
 
@@ -2684,8 +2918,11 @@ public class SignRanks extends JavaPlugin implements Listener {
       					  mysign.update(true);
         				}
         			}
+        			String primary = perms.getPrimaryGroup(player.getWorld(),player.getName());
         			perms.playerAddGroup(player.getWorld(),player.getName(),sign.getLine(1));
-      				if (perms.getPrimaryGroup(player.getWorld(),player.getName()).equals(sign.getLine(1))==false) {
+        			perms.playerRemoveGroup(player.getWorld(),player.getName(),primary);
+        			perms.playerRemoveGroup(player, primary);
+      				if (perms.getPrimaryGroup(player.getWorld(),player.getName()).equals(sign.getLine(1))==false||perms.playerInGroup(player, primary)) {
       					perms.playerRemoveGroup(player.getWorld(),player.getName(),perms.getPrimaryGroup(player.getWorld(),player.getName()));
         				perms.playerRemoveGroup(player.getWorld(),player.getName(),sign.getLine(1));
         				perms.playerAddGroup(player.getWorld(),player.getName(),sign.getLine(1));
@@ -3446,14 +3683,24 @@ public class SignRanks extends JavaPlugin implements Listener {
         		  msg(player,ChatColor.GRAY+getmsg("REQ1")+": "+ ChatColor.RED+"signranks.use.suffix");
         	  }
           }
-          
+          else if ((sign.getLine(0).equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.shop.text")))&&(this.getConfig().getBoolean("signs.types.shop.enabled"))) {
+        	  //TODO right click shop
+        	  //TODO use shop
+        	  if (player.getName().contains(sign.getLine(3))) {
+        		  //DEPOSIT ITEMS
+        		  //TODO OPEN virtual CHEST TO ADD STOCK.
+        	  }
+        	  else {
+        		  //BUY ITEMS
+        	  }
+          }
           
           
           
           
           
           else if ((sign.getLine(0).equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.xpbank.text")))&&(this.getConfig().getBoolean("signs.types.xpbank.enabled"))) {
-        	  if ((sign.getLine(3).equalsIgnoreCase(player.getName()))||(checkperm(player,"signranks.use.xpbank")==true)) {
+        	  if ((player.getName().toLowerCase().contains(sign.getLine(3).toLowerCase()))||(checkperm(player,"signranks.use.xpbank")==true)) {
         		  ExperienceManager expMan = new ExperienceManager(player);
         	  int amount = 0;
         	  if (player.isSneaking()) {
@@ -3553,7 +3800,16 @@ public class SignRanks extends JavaPlugin implements Listener {
           }
         }
       else {
-    	  if ((sign.getLine(0).equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.promote.text")))&&(this.getConfig().getBoolean("signs.types.promote.enabled"))) {
+    	  if ((sign.getLine(0).equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.shop.text")))&&(this.getConfig().getBoolean("signs.types.shop.enabled"))) {
+    		  //TODO left click shop
+    		  //CHECK IF OWNER
+    		  //CHECK IF CROUCHING
+    		  if (player.getName().contains(sign.getLine(3))) {
+    			  
+    		  }
+    		  msg(player,ChatColor.LIGHT_PURPLE+getmsg("GREETING"));
+    	  }
+    	  else if ((sign.getLine(0).equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.promote.text")))&&(this.getConfig().getBoolean("signs.types.promote.enabled"))) {
     		  msg(player,ChatColor.LIGHT_PURPLE+getmsg("GREETING"));
     	  }
     	  else if ((sign.getLine(0).equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.inherit.text")))&&(this.getConfig().getBoolean("signs.types.inherit.enabled"))) {
@@ -3772,7 +4028,7 @@ public class SignRanks extends JavaPlugin implements Listener {
     	  }
     	  
     	  else if ((sign.getLine(0).equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.xpbank.text")))&&(this.getConfig().getBoolean("signs.types.xpbank.enabled"))) {
-    		  if ((sign.getLine(3).equalsIgnoreCase(player.getName()))&&(checkperm(player,"signranks.use.xpbank"))) {
+    		  if ((player.getName().toLowerCase().contains(sign.getLine(3).toLowerCase()))&&(checkperm(player,"signranks.use.xpbank"))) {
     			  ExperienceManager expMan = new ExperienceManager(player);
     		  int amount = 0;
     		  int mylevel = expMan.getLevelForExp(expMan.getCurrentExp());
@@ -4099,7 +4355,7 @@ public class SignRanks extends JavaPlugin implements Listener {
 			    				for(int i = 1; i < args.length; i++) {
 			    					line+=args[i]+" ";
 			    				}
-				    			sign.setLine(Integer.parseInt(args[0])-1, colorise(line));
+				    			sign.setLine(Integer.parseInt(args[0])-1, colorise(line).trim());
 				    			sign.update(true);
 		    				}
 		    				else {
