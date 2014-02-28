@@ -150,6 +150,25 @@ public class SignRanks extends JavaPlugin implements Listener {
     			return "";
     		}
     	}
+    	
+    	public boolean inventoryspace(Player player,ItemStack item) {
+    		for (ItemStack i : player.getInventory().getContents()) {
+    			if (i == null) {
+    				return true;
+    			}
+    			else if (i.getType().equals(Material.AIR)) {
+    				return true;
+    			}
+    			else if (i.isSimilar(item)) {
+    				if (i.getAmount()<i.getMaxStackSize()) {
+    					return true;
+    				}
+    			}
+    		}
+    		
+    		
+    		return false;
+    	}
     
         public String matchgroup(String group) {
     		String[] groups = (perms.getGroups());
@@ -3686,12 +3705,79 @@ public class SignRanks extends JavaPlugin implements Listener {
           else if ((sign.getLine(0).equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.shop.text")))&&(this.getConfig().getBoolean("signs.types.shop.enabled"))) {
         	  //TODO right click shop
         	  //TODO use shop
+        	  int items = Integer.parseInt(sign.getLine(0).replace(" - §1"+this.getConfig().getString("signs.types.shop.text"),""));
         	  if (player.getName().contains(sign.getLine(3))) {
+        		  if (items<=0) {
+        			  msg(player,"PLACEHOLDER - Nothing to withdraw, left click to deposit");
+        			  return;
+        		  }
+        		  else if (player.isSneaking()) {
+        			  items = Math.min(64,items);
+        		  }
+        		  else {
+        			  // withdraw 1 item
+        		  }
         		  //DEPOSIT ITEMS
         		  //TODO OPEN virtual CHEST TO ADD STOCK.
         	  }
         	  else {
-        		  //BUY ITEMS
+        		  if (items<=0) {
+        			  msg(player,"PLACEHOLDER - This shop is out of stock");
+        			  return;
+        		  }
+        		  else {
+        			  ExperienceManager expMan = new ExperienceManager(player);
+        			  int cost = -1;
+        			  int costtype = 0;
+        			  if (sign.getLine(2).contains(" exp")) {
+        				  costtype = 1;
+    			  		  cost = Integer.parseInt(sign.getLine(2).substring(0,sign.getLine(2).length() - 4));
+    			  	  }
+    			  	  else if (sign.getLine(2).contains(this.getConfig().getString("economy.symbol"))) {
+    			  		  costtype = 2;
+    			  		  cost = Integer.parseInt(sign.getLine(2).substring(1,sign.getLine(2).length()));
+    			  	  }
+    			  	  else {
+    			  		  msg(player,"PLACEHOLDER - invalid cost");
+    			  		  return;
+    			  	  }
+        			  if (player.isSneaking()) {
+        				  boolean canbuy = false;
+        				  cost*=Math.min(64,items);
+        				  Object[] iteminfo = LevensteinDistance(sign.getLine(1));
+    					  ItemStack itemstack = new ItemStack(((ItemStack) iteminfo[0]).getType(), Math.min(64,items),((ItemStack) iteminfo[0]).getDurability());
+    					  if (inventoryspace(player, itemstack)!=true) {
+    						  msg(player,"PLACEHOLDER - no inventory room");
+    						  return;
+    					  }
+    					  if (costtype==2) {
+        					  EconomyResponse r = econ.withdrawPlayer(player.getName(), cost);
+        					  if (r.transactionSuccess()) {
+        						  canbuy = true;
+        					  }
+        					  else {
+        						  msg(player,"PLACEHOLDER - insufficient $");
+        					  }
+        				  }
+        				  else {
+        					  if (expMan.getCurrentExp()>=cost) {
+        						  expMan.changeExp(-cost);
+        						  canbuy = true;
+        					  }
+        					  else {
+        						  msg(player,"PLACEHOLDER - insufficient exp");
+        					  }
+        				  }
+        				  if (canbuy) {
+        						  player.getInventory().addItem(itemstack);
+        						  msg(player,"PLACEHOLDER - TRANSACTION SUCCESS");
+        				  }
+        			  }
+        			  else {
+        				  
+        			  }
+        			  // buy it
+        		  }
         	  }
           }
           
