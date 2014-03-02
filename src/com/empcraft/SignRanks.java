@@ -1,5 +1,6 @@
 package com.empcraft;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -39,6 +40,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -47,6 +49,7 @@ import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;
 import org.bukkit.plugin.Plugin;
@@ -68,51 +71,71 @@ public class SignRanks extends JavaPlugin implements Listener {
 	public static List<String> players = new ArrayList<>();
 	public boolean isenabled = false;
 	public int recursion = 0;
+	public ScriptEngine engine = (new ScriptEngineManager()).getEngineByName("JavaScript");
 	SignRanks plugin;
-	
+		
     
-		public String javascript(String line) {
-	        try {
-	        	ScriptEngineManager mgr = new ScriptEngineManager();
-	        	ScriptEngine engine = mgr.getEngineByName("JavaScript");
-	        	Object toreturn =  engine.eval(line);
-	        	try {
-	        		Double num = (Double) toreturn;
-	        		if (Math.ceil(num) == Math.floor(num)) {
-	        			line = Long.toString(Math.round(num));
-	        		}
-	        		else {
-	        			throw new Exception();
-	        		}
-	        	}
-	        	catch (Exception d) {
-	        	try {
-	        		Long num = (Long) toreturn;
-	        		line = Long.toString(num);
-	        	}
-	        	catch (Exception f) {
-	            	try {
-	            		int num = (int) toreturn;
-	            		line = Integer.toString(num);
-	            	}
-	            	catch (Exception g) {
-	                	try {
-	                		Float num = (Float) toreturn;
-	                		line = Float.toString(num);
-	                	}
-	                	catch (Exception h) {
-	                    	try {
-	                    		line = "" + toreturn;
-	                    	}
-	                    	catch (Exception i) {
-	                    	}
-	                	}
-	            	}
-	        	}
-	        	}
+	@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
+	public void onPlayerJoin(PlayerJoinEvent event) {
+		try {
+			String playername = event.getPlayer().getName();
+			File yamlFile = new File(getDataFolder()+File.separator+"expdata.yml");
+			YamlConfiguration yaml = YamlConfiguration.loadConfiguration(yamlFile);
+			if (yaml.contains(playername)) {
+				ExperienceManager expMan = new ExperienceManager(event.getPlayer());
+				expMan.changeExp(yaml.getInt(playername));
+				yaml.set(playername, null);
+				yaml.save(yamlFile);
+			}
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public String javascript(String line) {
+        try {
+        	Object toreturn =  engine.eval(line);
+        	try {
+        		Double num = (Double) toreturn;
+        		if (Math.ceil(num) == Math.floor(num)) {
+        			line = Long.toString(Math.round(num));
+        		}
+        		else {
+        			throw new Exception();
+        		}
+        	}
+        	catch (Exception d) {
+        	try {
+        		Long num = (Long) toreturn;
+        		line = Long.toString(num);
+        	}
+        	catch (Exception f) {
+            	try {
+            		int num = (int) toreturn;
+            		line = Integer.toString(num);
+            	}
+            	catch (Exception g) {
+                	try {
+                		Float num = (Float) toreturn;
+                		line = Float.toString(num);
+                	}
+                	catch (Exception h) {
+                    	try {
+                    		line = "" + toreturn;
+                    	}
+                    	catch (Exception i) {
+                    	}
+                	}
+            	}
+        	}
+        	}
 			} catch (Exception e) { }
 	        return line;
 		}
+	
+		
+	
 		public void isadd(Player player, Location loc) {
 			if (list.contains(loc)==false) {
 			players.add(player.getName());
@@ -160,8 +183,13 @@ public class SignRanks extends JavaPlugin implements Listener {
     				return true;
     			}
     			else if (i.isSimilar(item)) {
-    				if (i.getAmount()<i.getMaxStackSize()) {
-    					return true;
+    				if (i.getEnchantments().size()==0)
+    				{
+    					if (i.hasItemMeta()==false) {
+		    				if (i.getAmount()+item.getAmount()<=i.getMaxStackSize()) {
+		    					return true;
+		    				}
+    					}
     				}
     			}
     		}
@@ -169,7 +197,27 @@ public class SignRanks extends JavaPlugin implements Listener {
     		
     		return false;
     	}
-    
+    	
+    	public int countitem(Player player, ItemStack item) {
+    		int count = 0;
+    		for (ItemStack i : player.getInventory().getContents()) {
+    			if (i!=null) {
+    				if (i.getType().equals(Material.AIR)==false) {
+		    			if (i.getDurability()==item.getDurability()) {
+		    				if (i.getType().equals(item.getType())) {
+		    					if (i.getEnchantments().size()==0) {
+		    						if (i.hasItemMeta()==false) {
+		    							count+=i.getAmount();
+		    						}
+		    					}
+		    				}
+	    				}
+    				}
+    			}
+    		}
+    		return count;
+    	}
+    	
         public String matchgroup(String group) {
     		String[] groups = (perms.getGroups());
     		for (String current:groups) {
@@ -294,7 +342,6 @@ public class SignRanks extends JavaPlugin implements Listener {
             				mytest+=mycmds[j]+";";
             			}
             			else {
-            				System.out.println("END "+mycmds[j]);
             			}
             			if ((depth2 == 0)||(j==mycmds.length-1)) {
             				if (cmdargs[1].contains(":")) {
@@ -1338,7 +1385,6 @@ public class SignRanks extends JavaPlugin implements Listener {
 	    			return result;
 	    			}
 	    			catch (Exception e) {
-	    				System.out.println("F "+e);
 	    			}
     			}
     		}
@@ -1533,8 +1579,6 @@ public class SignRanks extends JavaPlugin implements Listener {
     		splittype = 1;
     	}
     	boolean toreturn = false;
-    	ScriptEngineManager mgr = new ScriptEngineManager();
-    	ScriptEngine engine = mgr.getEngineByName("JavaScript");
     	String left = args[0].trim();
     	String right = args[1].trim();
     	try {
@@ -1671,7 +1715,6 @@ public class SignRanks extends JavaPlugin implements Listener {
     			try {
     				String mybank = getConfig().getString("economy.salary.groups."+group+".bank.withdraw");
     				if (mybank.equals("__global__")==false) {
-	    				msg(player,"LB "+mybank+" | "+banks2.get(mybank)+" | "+getConfig().getInt("economy.salary.bank."+mybank+".money"));
 	    				paymoney += banks2.get(mybank);
 	    				getConfig().set("economy.salary.bank."+mybank+".money", getConfig().getInt("economy.salary.bank."+mybank+".money")-banks2.get(mybank));
     				}
@@ -1681,7 +1724,6 @@ public class SignRanks extends JavaPlugin implements Listener {
     			}
     			if (paymoney<0) {
     				try {
-    				msg(player,"economy.salary.groups."+group+".bank.deposit"+" | "+group);
     				Set<String> deposit = getConfig().getConfigurationSection("economy.salary.groups."+group+".bank.deposit").getKeys(false);
     				msg(player,deposit+"{");
     				if (deposit.size()<0) {
@@ -1772,7 +1814,7 @@ public class SignRanks extends JavaPlugin implements Listener {
 		}
 			if (counter2 > 1200) {
 				counter2 = 0;
-				System.out.println("[SignRansssksPlus] Saving variables...");
+				System.out.println("[SignRanksPlus] Saving variables...");
 				getConfig().getConfigurationSection("scripting").set("variables", null);
 		        for (final Entry<String, Object> node : globals.entrySet()) {
 		        	getConfig().options().copyDefaults(true);
@@ -1849,6 +1891,8 @@ public class SignRanks extends JavaPlugin implements Listener {
             return;
         }
         // LANG START
+        File f0 = new File(getDataFolder() + File.separator+"expdata.yml");
+        if(f0.exists()!=true) {  saveResource("expdata.yml", false); }
         File f3 = new File(getDataFolder() + File.separator+"english.yml");
         if(f3.exists()!=true) {  saveResource("english.yml", false); }
         File f4 = new File(getDataFolder() + File.separator+"french.yml");
@@ -1934,7 +1978,7 @@ public class SignRanks extends JavaPlugin implements Listener {
         
         
         final Map<String, Object> options = new HashMap<String, Object>();
-        getConfig().set("version", "0.3.0");
+        getConfig().set("version", "0.6.0");
         options.put("signs.protect",true);
         options.put("language","english");
         
@@ -2085,31 +2129,17 @@ public class SignRanks extends JavaPlugin implements Listener {
 	    	catch (Exception e) {
 	    		
 	    	}
-		 	System.out.println("0.0");
 	    	string = StringUtils.replace(string.toString(), " ", "_").toUpperCase();
 	    	Material[] materials = Material.values();
 			int smallest = -1;
 			String materialname = null;
 	    	ItemStack lastmaterial = null;
-	    	System.out.println("0.1");
 			File yamlFile = new File(getDataFolder()+File.separator+"idlist.yml");
-			System.out.println("0.2");
 			YamlConfiguration yaml = YamlConfiguration.loadConfiguration(yamlFile);
-			System.out.println("0.3");
-			System.out.println(""+YamlConfiguration.loadConfiguration(yamlFile).get("test"));
-			System.out.println("0.4");
-			System.out.println(""+yaml.get("test1.test2"));
-			System.out.println("0.5");
-			System.out.println(""+yaml.get("test1.test3"));
-			System.out.println("0.6");
-			System.out.println(""+yaml.get("test.test_4"));
-			System.out.println("0.7");
 			Set<String> ids = yaml.getConfigurationSection("item-ids").getKeys(false);
-			System.out.println("0.8");
 			try {
 				toreturn[1] = ""+yaml.getString("item-ids."+string.replace(":","-"));
 				toreturn[0] = new ItemStack(Integer.parseInt(string.split(":")[0]),1, Short.parseShort(string.split(":")[1]));
-				System.out.println("FOUND "+"item-ids."+string.replace(":","-")+ " | "+yaml.getString("item-ids."+string.replace(":","-"))+" | "+yaml.getString("item-ids.1"));
 				return toreturn;
 			}
 			catch (Exception e) {
@@ -2117,7 +2147,6 @@ public class SignRanks extends JavaPlugin implements Listener {
 					try {
 						toreturn[1] = Integer.parseInt(string.split(":")[0])+":"+Integer.parseInt(string.split(":")[1]);
 						toreturn[0] = new ItemStack(Integer.parseInt(string.split(":")[0]),1, Short.parseShort(string.split(":")[1]));
-						System.out.println("NOT FOUND "+string);
 						return toreturn;
 					}
 					catch (Exception e2) {
@@ -2125,10 +2154,8 @@ public class SignRanks extends JavaPlugin implements Listener {
 					}
 				}
 			}
-			System.out.println("1");
 			for (String current:ids) {
 				String itemname = yaml.getString("item-ids."+current);
-				System.out.println(itemname);
 				if (smallest == -1) {
 					lastmaterial = new ItemStack(Material.AIR);
 					smallest = 100;
@@ -2162,7 +2189,6 @@ public class SignRanks extends JavaPlugin implements Listener {
 					}
 				}
 			}
-			System.out.println("2");
 	    	for (Material mymaterial:materials) {
 	    		String current = mymaterial.toString();
 	    		if (smallest == -1) {
@@ -2188,10 +2214,8 @@ public class SignRanks extends JavaPlugin implements Listener {
 	    			}
 	    		}
 	    	}
-	    	System.out.println("3");
 	    	toreturn[0] = lastmaterial;
 	    	toreturn[1] = materialname;
-	    	System.out.println("4");
 	    	return toreturn;
 	    }
 	 
@@ -2258,11 +2282,7 @@ public class SignRanks extends JavaPlugin implements Listener {
 		            			try {
 		            			msg = ChatColor.GRAY+": "+ChatColor.GREEN+"+"+items+" "+sign.getLine(1);
 		            			int num = Integer.parseInt(items);
-		            			System.out.println("5");
 		            			Object[] iteminfo = LevensteinDistance(sign.getLine(1));
-		            			System.out.println("6");
-		            			System.out.println(" | "+iteminfo);
-		            			System.out.println("6.1");
 		            			ItemStack itemstack = new ItemStack(((ItemStack) iteminfo[0]).getType(), num,((ItemStack) iteminfo[0]).getDurability());
 		            			player.getWorld().dropItemNaturally(sign.getLocation(), itemstack);
 		            			}
@@ -2510,22 +2530,16 @@ public class SignRanks extends JavaPlugin implements Listener {
 			  	 }
 			}
 		}
-		else if (((line1.equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.shop.text"))) || (line1.equalsIgnoreCase(this.getConfig().getString("signs.types.shop.text"))))&&(this.getConfig().getBoolean("signs.types.shop.enabled"))) {
+		else if (((line1.contains("§1"+this.getConfig().getString("signs.types.shop.text"))) || (line1.equalsIgnoreCase(this.getConfig().getString("signs.types.shop.text"))))&&(this.getConfig().getBoolean("signs.types.shop.enabled"))) {
 			type2 = this.getConfig().getString("signs.types.shop.text");
 			if (checkperm(player,"signranks.create.shop")) {
-				System.out.println("5.1");
 				Object[] materialinfo = LevensteinDistance(event.getLine(1));
-    			System.out.println(" | "+materialinfo[0].toString()+" | "+materialinfo[1].toString());
-    			System.out.println("5.10");
-				System.out.println("5.2");
-				System.out.println(materialinfo);
-				System.out.println("5.3");
 				if (event.getLine(1).trim().equals("")) {
-					msg(player,"PLACEHOLDER - trim"+event.getLine(1));
+					msg(player,"&7"+getmsg("ERROR14")+":&c 2&7.");
 					error = true;
 				}
 				else if (((ItemStack) materialinfo[0]).getType().equals(Material.AIR)) {
-					msg(player,"PLACEHOLDER - air");
+					msg(player,"&7"+getmsg("ERROR14")+":&c 2&7.");
 					error = true;
 				}
 				else {
@@ -2542,7 +2556,7 @@ public class SignRanks extends JavaPlugin implements Listener {
 						}
 						if (cost < 0) {
 							error = true;
-							msg(player,"PLACEHOLDER - cost cannot be negative");
+							msg(player,"&7"+getmsg("ERROR7")+": &c"+sign.getLine(2)+"&7.");
 						}
 						msg(player,"Worked");
 						event.setLine(0, "0 - §1" + type2);
@@ -2560,7 +2574,7 @@ public class SignRanks extends JavaPlugin implements Listener {
 					}
 					catch (Exception e) {
 						error = true;
-						msg(player,"PLACEHOLDER - error on line 3 with cost "+e.getMessage());
+						msg(player,"&7"+getmsg("ERROR14")+":&c 3&7.");
 					}
 				}
 		  		
@@ -2569,7 +2583,6 @@ public class SignRanks extends JavaPlugin implements Listener {
 				hasperm = false;
 				error = true;
 			}
-			System.out.println("6");
 		}
 		
 		
@@ -2589,10 +2602,10 @@ public class SignRanks extends JavaPlugin implements Listener {
 		else if ((type2==this.getConfig().getString("signs.types.shop.text"))) {
 			if (error) {
 				event.setLine(0, "§4" + type2);
-				msg(player,"PLACEHOLDER - FAILED to create a [SHOP] sign. USE etc...");
+				msg(player,"&c"+getmsg("ERROR34")+"&7.");
 			}
 			else {
-				msg(player,"PLACEHOLDER - created a [SHOP] sign");
+				msg(player,ChatColor.GRAY+getmsg("CREATE1")+" "+ChatColor.GREEN+type2+ChatColor.GRAY+" "+getmsg("CREATE2")+".");
 			}
 		}
 		else if ((hasperm)&&(type2!="")&&(error==false)) {
@@ -3702,27 +3715,37 @@ public class SignRanks extends JavaPlugin implements Listener {
         		  msg(player,ChatColor.GRAY+getmsg("REQ1")+": "+ ChatColor.RED+"signranks.use.suffix");
         	  }
           }
-          else if ((sign.getLine(0).equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.shop.text")))&&(this.getConfig().getBoolean("signs.types.shop.enabled"))) {
+          else if ((sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.shop.text")))&&(this.getConfig().getBoolean("signs.types.shop.enabled"))) {
         	  //TODO right click shop
         	  //TODO use shop
         	  int items = Integer.parseInt(sign.getLine(0).replace(" - §1"+this.getConfig().getString("signs.types.shop.text"),""));
         	  if (player.getName().contains(sign.getLine(3))) {
+        		  int num;
         		  if (items<=0) {
-        			  msg(player,"PLACEHOLDER - Nothing to withdraw, left click to deposit");
+        			  msg(player,"&c"+getmsg("ERROR18")+"&7.");
         			  return;
         		  }
         		  else if (player.isSneaking()) {
-        			  items = Math.min(64,items);
+        			  num = Math.min(64,items);
         		  }
         		  else {
-        			  // withdraw 1 item
+        			  num = 1;
         		  }
-        		  //DEPOSIT ITEMS
-        		  //TODO OPEN virtual CHEST TO ADD STOCK.
+        		  
+        		  Object[] iteminfo = LevensteinDistance(sign.getLine(1));
+        		  ItemStack itemstack = new ItemStack(((ItemStack) iteminfo[0]).getType(), num,((ItemStack) iteminfo[0]).getDurability());
+        		  if (inventoryspace(player, itemstack)!=true) {
+        			  msg(player,"&c"+getmsg("ERROR35")+"&7.");
+					  return;
+				  }
+        		  player.getInventory().addItem(itemstack);
+        		  player.updateInventory();
+        		  sign.setLine(0, (items-num)+" - §1" + this.getConfig().getString("signs.types.shop.text"));
+        		  sign.update();
         	  }
         	  else {
         		  if (items<=0) {
-        			  msg(player,"PLACEHOLDER - This shop is out of stock");
+        			  msg(player,"&c"+getmsg("ERROR36")+"&7.");
         			  return;
         		  }
         		  else {
@@ -3737,8 +3760,26 @@ public class SignRanks extends JavaPlugin implements Listener {
     			  		  costtype = 2;
     			  		  cost = Integer.parseInt(sign.getLine(2).substring(1,sign.getLine(2).length()));
     			  	  }
+        			  if (sign.getLine(2).contains(" lvl")) {
+        				  costtype = 1;
+        				  int costint = Integer.parseInt(sign.getLine(2).substring(0,sign.getLine(2).length() - 4));
+        				  if (player.isSneaking()) {
+    						  costint *= Math.min(64,items);
+    					  }
+        				  
+        				  if (costint > expMan.getLevelForExp(expMan.getCurrentExp())) {
+        					  msg(player,"&7"+getmsg("ERROR8")+": &c"+costint+" lvl&7.");
+        					  return;
+        				  }
+        				  else {
+        					  cost = expMan.getXpForLevel(expMan.getLevelForExp(expMan.getCurrentExp()))-expMan.getXpForLevel(expMan.getLevelForExp(expMan.getCurrentExp())-costint);
+        					  if (player.isSneaking()) {
+        						  cost /= Math.min(64,items);
+        					  }
+        				  }
+        			  }
     			  	  else {
-    			  		  msg(player,"PLACEHOLDER - invalid cost");
+    			  		msg(player,"&7"+getmsg("ERROR14")+":&c 3&7.");
     			  		  return;
     			  	  }
         			  if (player.isSneaking()) {
@@ -3747,34 +3788,120 @@ public class SignRanks extends JavaPlugin implements Listener {
         				  Object[] iteminfo = LevensteinDistance(sign.getLine(1));
     					  ItemStack itemstack = new ItemStack(((ItemStack) iteminfo[0]).getType(), Math.min(64,items),((ItemStack) iteminfo[0]).getDurability());
     					  if (inventoryspace(player, itemstack)!=true) {
-    						  msg(player,"PLACEHOLDER - no inventory room");
+    						  msg(player,"&c"+getmsg("ERROR35")+"&7.");
     						  return;
     					  }
     					  if (costtype==2) {
         					  EconomyResponse r = econ.withdrawPlayer(player.getName(), cost);
         					  if (r.transactionSuccess()) {
+        						  econ.depositPlayer(sign.getLine(3), cost);
         						  canbuy = true;
         					  }
         					  else {
-        						  msg(player,"PLACEHOLDER - insufficient $");
+        						  msg(player,"&7"+getmsg("ERROR8")+": &c$"+cost+" &7.");
         					  }
         				  }
         				  else {
         					  if (expMan.getCurrentExp()>=cost) {
         						  expMan.changeExp(-cost);
         						  canbuy = true;
+           						  if (Bukkit.getPlayer(sign.getLine(3))!=null) {
+        							  ExperienceManager expMan2 = new ExperienceManager(Bukkit.getPlayer(sign.getLine(3)));
+        							  expMan2.changeExp(cost);
+        						  }
+        						  else {
+        							  String playername = sign.getLine(3);
+        							  File yamlFile = new File(getDataFolder()+File.separator+"expdata.yml");
+        							  YamlConfiguration yaml = YamlConfiguration.loadConfiguration(yamlFile);
+        							  if (yaml.contains(playername)) {
+        								  yaml.set(playername, yaml.getInt(playername)+cost);
+        							  }
+        							  else {
+        								  yaml.set(playername,cost);
+        							  }
+        							  try {
+										yaml.save(yamlFile);
+									} catch (IOException e) {
+										// TODO Auto-generated catch block
+										e.printStackTrace();
+									}
+	        						  //TODO give XP to offline player
+        						  }
         					  }
         					  else {
-        						  msg(player,"PLACEHOLDER - insufficient exp");
+        						  msg(player,"&7"+getmsg("ERROR8")+": &c"+cost+" exp&7.");
         					  }
         				  }
         				  if (canbuy) {
         						  player.getInventory().addItem(itemstack);
-        						  msg(player,"PLACEHOLDER - TRANSACTION SUCCESS");
+        						  player.updateInventory();
+        						  msg(player,"&7"+getmsg("SUCCESS1")+" &a"+sign.getLine(1)+"&7 "+getmsg("SUCCESS2")+": &c-"+sign.getLine(2)+" EA&7.");
+        						  sign.setLine(0, (items-Math.min(64,items))+" - §1" + this.getConfig().getString("signs.types.shop.text"));
+        						  sign.update();
         				  }
         			  }
         			  else {
-        				  
+        				  boolean canbuy = false;
+        				  Object[] iteminfo = LevensteinDistance(sign.getLine(1));
+    					  ItemStack itemstack = new ItemStack(((ItemStack) iteminfo[0]).getType(), 1,((ItemStack) iteminfo[0]).getDurability());
+    					  if (inventoryspace(player, itemstack)!=true) {
+    						  msg(player,"&c"+getmsg("ERROR35")+"&7.");
+    						  return;
+    					  }
+    					  if (costtype==2) {
+        					  EconomyResponse r = econ.withdrawPlayer(player.getName(), cost);
+        					  if (r.transactionSuccess()) {
+        						  canbuy = true;
+        						  if (r.transactionSuccess()) {
+            						  econ.depositPlayer(sign.getLine(3), cost);
+            						  canbuy = true;
+            					  }
+            					  else {
+            						  msg(player,"&7"+getmsg("ERROR8")+": &c$"+cost+" &7.");
+            					  }
+        					  }
+        					  else {
+        						  msg(player,"&7"+getmsg("ERROR8")+": &c$"+cost+" &7.");
+        					  }
+        				  }
+        				  else {
+        					  if (expMan.getCurrentExp()>=cost) {
+        						  expMan.changeExp(-cost);
+        						  canbuy = true;
+           						  if (Bukkit.getPlayer(sign.getLine(3))!=null) {
+        							  ExperienceManager expMan2 = new ExperienceManager(Bukkit.getPlayer(sign.getLine(3)));
+        							  expMan2.changeExp(cost);
+        						  }
+        						  else {
+        							  String playername = sign.getLine(3);
+        							  File yamlFile = new File(getDataFolder()+File.separator+"expdata.yml");
+        							  YamlConfiguration yaml = YamlConfiguration.loadConfiguration(yamlFile);
+        							  if (yaml.contains(playername)) {
+        								  yaml.set(playername, yaml.getInt(playername)+cost);
+        							  }
+        							  else {
+        								  yaml.set(playername,cost);
+        							  }
+        							  try {
+										yaml.save(yamlFile);
+									} catch (IOException e) {
+										// TODO Auto-generated catch block
+										e.printStackTrace();
+									}
+	        						  //TODO give XP to offline player
+        						  }
+        					  }
+        					  else {
+        						  msg(player,"&7"+getmsg("ERROR8")+": &c"+cost+" exp&7.");
+        					  }
+        				  }
+        				  if (canbuy) {
+        						  player.getInventory().addItem(itemstack);
+        						  sign.setLine(0, (items-1)+" - §1" + this.getConfig().getString("signs.types.shop.text"));
+        						  sign.update();
+        						  player.updateInventory();
+        						  msg(player,"&7"+getmsg("SUCCESS1")+" &a"+sign.getLine(1)+"&7 "+getmsg("SUCCESS2")+": &c-"+sign.getLine(2)+" EA&7.");
+        				  }
         			  }
         			  // buy it
         		  }
@@ -3886,14 +4013,42 @@ public class SignRanks extends JavaPlugin implements Listener {
           }
         }
       else {
-    	  if ((sign.getLine(0).equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.shop.text")))&&(this.getConfig().getBoolean("signs.types.shop.enabled"))) {
+    	  if ((sign.getLine(0).contains("§1"+this.getConfig().getString("signs.types.shop.text")))&&(this.getConfig().getBoolean("signs.types.shop.enabled"))) {
     		  //TODO left click shop
     		  //CHECK IF OWNER
     		  //CHECK IF CROUCHING
     		  if (player.getName().contains(sign.getLine(3))) {
-    			  
+    			  int items = Integer.parseInt(sign.getLine(0).replace(" - §1"+this.getConfig().getString("signs.types.shop.text"),""));
+    			  Object[] iteminfo = LevensteinDistance(sign.getLine(1));
+    			  if (player.isSneaking()) {
+    				  ItemStack itemstack = new ItemStack(((ItemStack) iteminfo[0]).getType(), 1,((ItemStack) iteminfo[0]).getDurability());
+    				  int mymin = countitem(player, itemstack);
+    				  if (mymin>0) {
+    					  player.getInventory().removeItem(new ItemStack(((ItemStack) iteminfo[0]).getType(), Math.min(mymin, 64),((ItemStack) iteminfo[0]).getDurability()));
+    					  player.updateInventory();
+    					  sign.setLine(0, (items+Math.min(mymin, 64))+" - §1" + this.getConfig().getString("signs.types.shop.text"));
+    					  sign.update();
+    				  }
+    				  else {
+    					  msg(player,"&7"+getmsg("ERROR8")+":&c "+sign.getLine(1)+"&7.");
+    				  }
+    			  }
+    			  else {
+    				  ItemStack itemstack = new ItemStack(((ItemStack) iteminfo[0]).getType(), 1,((ItemStack) iteminfo[0]).getDurability());
+    				  if (player.getInventory().containsAtLeast(itemstack, 1)) {
+    					  player.getInventory().removeItem(new ItemStack(((ItemStack) iteminfo[0]).getType(), 1,((ItemStack) iteminfo[0]).getDurability()));
+    					  player.updateInventory();
+    					  sign.setLine(0, (items+1)+" - §1" + this.getConfig().getString("signs.types.shop.text"));
+    					  sign.update();
+    				  }
+    				  else {
+    					  msg(player,"&d"+getmsg("GREETING"));
+    				  }
+    			  }
     		  }
-    		  msg(player,ChatColor.LIGHT_PURPLE+getmsg("GREETING"));
+    		  else {
+    			  msg(player,"&d"+getmsg("GREETING"));
+    		  }
     	  }
     	  else if ((sign.getLine(0).equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.promote.text")))&&(this.getConfig().getBoolean("signs.types.promote.enabled"))) {
     		  msg(player,ChatColor.LIGHT_PURPLE+getmsg("GREETING"));
