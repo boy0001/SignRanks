@@ -84,8 +84,10 @@ public class SignRanks extends JavaPlugin implements Listener {
 			if (yaml.contains(playername)) {
 				ExperienceManager expMan = new ExperienceManager(event.getPlayer());
 				expMan.changeExp(yaml.getInt(playername));
+				msg(event.getPlayer(),"§1"+this.getConfig().getString("signs.types.shop.text")+"&7: "+getmsg("PAY3")+" &a"+yaml.getInt(playername) +" exp&7.");
 				yaml.set(playername, null);
 				yaml.save(yamlFile);
+				
 			}
 		}
 		catch (Exception e) {
@@ -3756,11 +3758,11 @@ public class SignRanks extends JavaPlugin implements Listener {
         				  costtype = 1;
     			  		  cost = Integer.parseInt(sign.getLine(2).substring(0,sign.getLine(2).length() - 4));
     			  	  }
-    			  	  else if (sign.getLine(2).contains(this.getConfig().getString("economy.symbol"))) {
+    			  	  else if (sign.getLine(2).contains(getConfig().getString("economy.symbol"))) {
     			  		  costtype = 2;
     			  		  cost = Integer.parseInt(sign.getLine(2).substring(1,sign.getLine(2).length()));
     			  	  }
-        			  if (sign.getLine(2).contains(" lvl")) {
+    			  	  else if (sign.getLine(2).contains(" lvl")) {
         				  costtype = 1;
         				  int costint = Integer.parseInt(sign.getLine(2).substring(0,sign.getLine(2).length() - 4));
         				  if (player.isSneaking()) {
