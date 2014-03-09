@@ -1663,11 +1663,19 @@ public class SignRanks extends JavaPlugin implements Listener {
 				return player.getLocation();
 			}
 			else {
-				ImprovedOfflinePlayer offlineplayer = new ImprovedOfflinePlayer(string);
-				if (offlineplayer.exists()) {
-					return offlineplayer.getLocation();
+				try {
+					ImprovedOfflinePlayer offlineplayer = new ImprovedOfflinePlayer(string);
+					if (offlineplayer.exists()) {
+						return offlineplayer.getLocation();
+					}
+					else {
+						World world = Bukkit.getWorld(string);
+						if (world!=null) {
+							return world.getSpawnLocation();
+						}
+					}
 				}
-				else {
+				catch (Exception e) {
 					World world = Bukkit.getWorld(string);
 					if (world!=null) {
 						return world.getSpawnLocation();
@@ -2140,7 +2148,7 @@ public class SignRanks extends JavaPlugin implements Listener {
         
         
         final Map<String, Object> options = new HashMap<String, Object>();
-        getConfig().set("version", "0.6.1");
+        getConfig().set("version", "0.6.2");
         options.put("signs.protect",true);
         options.put("language","english");
         
