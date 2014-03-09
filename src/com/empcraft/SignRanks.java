@@ -1,5 +1,6 @@
 package com.empcraft;
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,8 +68,8 @@ public class SignRanks extends JavaPlugin implements Listener {
     public static Map<String, Object> protocol = new HashMap<String, Object>();
     public static Map<String, Integer> kills = new HashMap<String, Integer>();
     public Map<String, Object> changers = new HashMap<String, Object>();
-	public static List<Location> list = new ArrayList<>();
-	public static List<String> players = new ArrayList<>();
+	public static List<Location> list = new ArrayList();
+	public static List<String> players = new ArrayList();
 	public boolean isenabled = false;
 	public int recursion = 0;
 	public ScriptEngine engine = (new ScriptEngineManager()).getEngineByName("JavaScript");
@@ -114,7 +115,7 @@ public class SignRanks extends JavaPlugin implements Listener {
         	}
         	catch (Exception f) {
             	try {
-            		int num = (int) toreturn;
+            		Integer num = (Integer) toreturn;
             		line = Integer.toString(num);
             	}
             	catch (Exception g) {
@@ -1115,6 +1116,19 @@ public class SignRanks extends JavaPlugin implements Listener {
       		}
     		return mylist.substring(0,mylist.length()-1);
     	}
+    	else if (line.equals("{playerlist}")) {
+    			List<String> names = new ArrayList<String>();
+                File playersFolder = new File("world" + File.separator + "players");
+                String[] dat = playersFolder.list(new FilenameFilter() {
+                    public boolean accept(File f, String s) {
+                        return s.endsWith(".dat");
+                    }
+                });
+                for (String current : dat) {
+                    names.add(current.replaceAll(".dat$", ""));
+                }
+                return StringUtils.join(names,",");
+    	}
     	else if (line.equals("{baniplist}")) {
     		String mylist = "";
       		for (String clist:Bukkit.getIPBans()) {
@@ -1369,12 +1383,12 @@ public class SignRanks extends JavaPlugin implements Listener {
         }
     	Set<String> custom = null;
     	FileConfiguration myconfig = plugin.getConfig();
-		custom = myconfig.getConfigurationSection("signs.placeholders").getKeys(false);
+		custom = myconfig.getConfigurationSection("scripting.placeholders").getKeys(false);
     	if (custom.size()>0) {
     		for (String mycustom:custom) {
     			
     			if (line.contains("{"+mycustom+":")||line.equals("{"+mycustom+"}")) {
-	    			List<String> current = myconfig.getStringList("signs.placeholders."+mycustom);
+	    			List<String> current = myconfig.getStringList("scripting.placeholders."+mycustom);
 	    			String mycommands = StringUtils.join(current,";");
 	    			for(int i = 0; i < mysplit.length; i++) {
 	    				mycommands.replace("{arg"+i+"}", mysplit[i]);
@@ -1640,6 +1654,9 @@ public class SignRanks extends JavaPlugin implements Listener {
     }
     
     public String pay() {
+    	if (getServer().getOnlinePlayers().length==0) {
+			return "&cNo online players&7.";
+		}
     	String toreturn = colorise("&7"+getmsg("PAY1"))+"\n";
 
     	double paymoney;
@@ -1955,7 +1972,7 @@ public class SignRanks extends JavaPlugin implements Listener {
 	        		FileConfiguration current = YamlConfiguration.loadConfiguration(mysigns[i]);
 	        		Set<String> values = current.getConfigurationSection("").getKeys(false);
 					for(String myval:values) {
-	        			getConfig().set("scripting.custom-placeholders."+mysigns[i].getName().substring(0,mysigns[i].getName().length()-4), current.get(myval));
+	        			getConfig().set("scripting.placeholders."+mysigns[i].getName().substring(0,mysigns[i].getName().length()-4), current.get(myval));
 	        		}
         		}
         	}
@@ -1980,7 +1997,7 @@ public class SignRanks extends JavaPlugin implements Listener {
         
         
         final Map<String, Object> options = new HashMap<String, Object>();
-        getConfig().set("version", "0.6.0");
+        getConfig().set("version", "0.6.1");
         options.put("signs.protect",true);
         options.put("language","english");
         
@@ -3798,6 +3815,12 @@ public class SignRanks extends JavaPlugin implements Listener {
         					  if (r.transactionSuccess()) {
         						  econ.depositPlayer(sign.getLine(3), cost);
         						  canbuy = true;
+        						  try {
+        							  msg(Bukkit.getPlayer(sign.getLine(3)),"&1"+getConfig().getString("signs.types.shop.text")+" &a+"+getConfig().getString("economy.symbol")+cost+"&7 - &c"+player.getName()+"&7.");
+        						  }
+        						  catch (Exception e) {
+        							  
+        						  }
         					  }
         					  else {
         						  msg(player,"&7"+getmsg("ERROR8")+": &c$"+cost+" &7.");
@@ -3810,6 +3833,12 @@ public class SignRanks extends JavaPlugin implements Listener {
            						  if (Bukkit.getPlayer(sign.getLine(3))!=null) {
         							  ExperienceManager expMan2 = new ExperienceManager(Bukkit.getPlayer(sign.getLine(3)));
         							  expMan2.changeExp(cost);
+        							  try {
+            							  msg(Bukkit.getPlayer(sign.getLine(3)),"&1"+getConfig().getString("signs.types.shop.text")+" &a+"+cost+" exp&7 - &c"+player.getName()+"&7.");
+            						  }
+            						  catch (Exception e) {
+            							  
+            						  }
         						  }
         						  else {
         							  String playername = sign.getLine(3);
@@ -3857,6 +3886,12 @@ public class SignRanks extends JavaPlugin implements Listener {
         						  if (r.transactionSuccess()) {
             						  econ.depositPlayer(sign.getLine(3), cost);
             						  canbuy = true;
+            						  try {
+            							  msg(Bukkit.getPlayer(sign.getLine(3)),"&1"+getConfig().getString("signs.types.shop.text")+" &a+"+getConfig().getString("economy.symbol")+cost+"&7 - &c"+player.getName()+"&7.");
+            						  }
+            						  catch (Exception e) {
+            							  
+            						  }
             					  }
             					  else {
             						  msg(player,"&7"+getmsg("ERROR8")+": &c$"+cost+" &7.");
@@ -3873,6 +3908,12 @@ public class SignRanks extends JavaPlugin implements Listener {
            						  if (Bukkit.getPlayer(sign.getLine(3))!=null) {
         							  ExperienceManager expMan2 = new ExperienceManager(Bukkit.getPlayer(sign.getLine(3)));
         							  expMan2.changeExp(cost);
+        							  try {
+            							  msg(Bukkit.getPlayer(sign.getLine(3)),"&1"+getConfig().getString("signs.types.shop.text")+" &a+"+cost+" exp&7 - &c"+player.getName()+"&7.");
+            						  }
+            						  catch (Exception e) {
+            							  
+            						  }
         						  }
         						  else {
         							  String playername = sign.getLine(3);
@@ -4020,15 +4061,24 @@ public class SignRanks extends JavaPlugin implements Listener {
     		  //CHECK IF OWNER
     		  //CHECK IF CROUCHING
     		  if (player.getName().contains(sign.getLine(3))) {
+    			  
+    			  
+    			  
+    			  
     			  int items = Integer.parseInt(sign.getLine(0).replace(" - §1"+this.getConfig().getString("signs.types.shop.text"),""));
     			  Object[] iteminfo = LevensteinDistance(sign.getLine(1));
-    			  if (player.isSneaking()) {
+    			  int maxstorage = getConfig().getInt("signs.types.shop.storage");
+    			  if (items>=maxstorage) {
+    				  msg(player,"&c"+getmsg("ERROR8")+"&7.");
+    				  return;
+    			  }
+    			  else if (player.isSneaking()) {
     				  ItemStack itemstack = new ItemStack(((ItemStack) iteminfo[0]).getType(), 1,((ItemStack) iteminfo[0]).getDurability());
     				  int mymin = countitem(player, itemstack);
     				  if (mymin>0) {
-    					  player.getInventory().removeItem(new ItemStack(((ItemStack) iteminfo[0]).getType(), Math.min(mymin, 64),((ItemStack) iteminfo[0]).getDurability()));
+    					  player.getInventory().removeItem(new ItemStack(((ItemStack) iteminfo[0]).getType(), Math.min(mymin, Math.min(64, maxstorage-items)),((ItemStack) iteminfo[0]).getDurability()));
     					  player.updateInventory();
-    					  sign.setLine(0, (items+Math.min(mymin, 64))+" - §1" + this.getConfig().getString("signs.types.shop.text"));
+    					  sign.setLine(0, (items+Math.min(mymin, Math.min(64, maxstorage-items)))+" - §1" + this.getConfig().getString("signs.types.shop.text"));
     					  sign.update();
     				  }
     				  else {
@@ -4047,6 +4097,10 @@ public class SignRanks extends JavaPlugin implements Listener {
     					  msg(player,"&d"+getmsg("GREETING"));
     				  }
     			  }
+    			  
+    			  
+    			  
+    			  
     		  }
     		  else {
     			  msg(player,"&d"+getmsg("GREETING"));
@@ -4457,7 +4511,7 @@ public class SignRanks extends JavaPlugin implements Listener {
     			        		FileConfiguration current = YamlConfiguration.loadConfiguration(mysigns[i]);
     			        		Set<String> values = current.getConfigurationSection("").getKeys(false);
     							for(String myval:values) {
-    			        			getConfig().set("scripting.custom-placeholders."+mysigns[i].getName().substring(0,mysigns[i].getName().length()-4), current.get(myval));
+    			        			getConfig().set("scripting.placeholders."+mysigns[i].getName().substring(0,mysigns[i].getName().length()-4), current.get(myval));
     			        		}
     		        		}
     		        	}
