@@ -56,6 +56,7 @@ import org.bukkit.material.MaterialData;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitScheduler;
 public class SignRanks extends JavaPlugin implements Listener {
     private static final Logger log = Logger.getLogger("Minecraft");
     public static Economy econ = null;
@@ -161,7 +162,6 @@ public class SignRanks extends JavaPlugin implements Listener {
 	 	    	}
 	    	 }
 	    	 kills.put(killed.getName(),0);
-
 	    }
     	public Location getSelectedBlock(Player p) {
     		   return p.getTargetBlock(null, 200).getLocation();
@@ -1517,19 +1517,25 @@ public class SignRanks extends JavaPlugin implements Listener {
     			return ""+node.getValue();
     		}
         }
+//    	System.out.println("1");
     	Set<String> custom = null;
     	FileConfiguration myconfig = getConfig();
-		custom = myconfig.getConfigurationSection("signs.placeholders").getKeys(false);
+		custom = myconfig.getConfigurationSection("scripting.placeholders").getKeys(false);
+//		System.out.println("2");
     	if (custom.size()>0) {
+//    		System.out.println("3");
     		for (String mycustom:custom) {
+//    			System.out.println("5");
     			
     			if (line.contains("{"+mycustom+":")||line.equals("{"+mycustom+"}")) {
+//    				System.out.println("6");
 	    			List<String> current = myconfig.getStringList("scripting.placeholders."+mycustom);
 	    			String mycommands = StringUtils.join(current,";");
 	    			for(int i = 0; i < mysplit.length; i++) {
 	    				mycommands.replace("{arg"+i+"}", mysplit[i]);
 	    			}
 	    			try {
+//	    				System.out.println("6");
 	    				String result = execute(mycommands,user,sender,elevation);
 	    				if (result.substring(0,3).equals("if ")) {
 	    					return ""+testif(result);
@@ -1890,7 +1896,6 @@ public class SignRanks extends JavaPlugin implements Listener {
     				}
     			}
     			catch (Exception e) {
-    				msg(player,"Error "+e);
     			}
     			if (paymoney<0) {
     				try {
@@ -2063,10 +2068,8 @@ public class SignRanks extends JavaPlugin implements Listener {
         // LANG START
         File f0 = new File(getDataFolder() + File.separator+"expdata.yml");
         if(f0.exists()!=true) {  saveResource("expdata.yml", false); }
-        File f3 = new File(getDataFolder() + File.separator+"english.yml");
-        if(f3.exists()!=true) {  saveResource("english.yml", false); }
-        File f4 = new File(getDataFolder() + File.separator+"french.yml");
-        if(f4.exists()!=true) {  saveResource("french.yml", false); }
+        saveResource("english.yml", true);
+        saveResource("french.yml", true);
         File f5 = new File(getDataFolder() + File.separator+"signs"+File.separator+"cmd.yml");
         if(f5.exists()!=true) {  saveResource("signs"+File.separator+"cmd.yml", false); }
         File f6 = new File(getDataFolder() + File.separator+"signs"+File.separator+"cmdop.yml");
@@ -2148,7 +2151,7 @@ public class SignRanks extends JavaPlugin implements Listener {
         
         
         final Map<String, Object> options = new HashMap<String, Object>();
-        getConfig().set("version", "0.6.2");
+        getConfig().set("version", "0.6.6");
         options.put("signs.protect",true);
         options.put("language","english");
         
@@ -2703,6 +2706,7 @@ public class SignRanks extends JavaPlugin implements Listener {
 		else if (((line1.contains("§1"+this.getConfig().getString("signs.types.shop.text"))) || (line1.equalsIgnoreCase(this.getConfig().getString("signs.types.shop.text"))))&&(this.getConfig().getBoolean("signs.types.shop.enabled"))) {
 			type2 = this.getConfig().getString("signs.types.shop.text");
 			if (checkperm(player,"signranks.create.shop")) {
+				hasperm = true;
 				Object[] materialinfo = LevensteinDistance(event.getLine(1));
 				if (event.getLine(1).trim().equals("")) {
 					msg(player,"&7"+getmsg("ERROR14")+":&c 2&7.");
@@ -2728,19 +2732,12 @@ public class SignRanks extends JavaPlugin implements Listener {
 							error = true;
 							msg(player,"&7"+getmsg("ERROR7")+": &c"+sign.getLine(2)+"&7.");
 						}
-						msg(player,"Worked");
 						event.setLine(0, "0 - §1" + type2);
-						msg(player,"1");
-						msg(player,"1"+materialinfo[1]);
-						msg(player,"1.1");
 						if (((String) materialinfo[1]).length()>16) {
 							materialinfo[1] = ((ItemStack) materialinfo[0]).getTypeId()+":"+((ItemStack) materialinfo[0]).getDurability();
 						}
-						msg(player,"2");
 						event.setLine(1, (String) materialinfo[1]);
-						msg(player,"3");
 						event.setLine(3, player.getName());
-						msg(player,"4");
 					}
 					catch (Exception e) {
 						error = true;
@@ -2770,7 +2767,11 @@ public class SignRanks extends JavaPlugin implements Listener {
 			event.setLine(0, "§1" + type2);
 		}
 		else if ((type2==this.getConfig().getString("signs.types.shop.text"))) {
-			if (error) {
+			if (hasperm==false) {
+				event.setLine(0, "§4" + type2);
+				msg(player,ChatColor.GRAY+getmsg("REQ1")+" "+ChatColor.RED+"signranks.create.shop");
+			}
+			else if (error) {
 				event.setLine(0, "§4" + type2);
 				msg(player,"&c"+getmsg("ERROR34")+"&7.");
 			}
@@ -3003,6 +3004,8 @@ public class SignRanks extends JavaPlugin implements Listener {
         			if (Arrays.asList(perms.getGroups()).contains(myline)) {
         				if (Arrays.asList(mygroups).contains(myline)) { 
         				}
+        				else if (perms.getPrimaryGroup(player).equalsIgnoreCase(myline)) {
+          				}
         				else {
         					hasperm = false;
         					reason += "&7"+getmsg("ERROR11")+"&c "+myline+"&7.\n";
@@ -3182,6 +3185,8 @@ public class SignRanks extends JavaPlugin implements Listener {
         			if (Arrays.asList(perms.getGroups()).contains(myline)) {
         				if (Arrays.asList(mygroups).contains(myline)) {
         				}
+        				else if (perms.getPrimaryGroup(player).equalsIgnoreCase(myline)) {
+          				}
         				else {
         					hasperm = false;
         					reason += "&7"+getmsg("ERROR11")+" &c"+myline+"&7.\n";
@@ -3307,7 +3312,9 @@ public class SignRanks extends JavaPlugin implements Listener {
       				  msg(player,ChatColor.GRAY+getmsg("SUCCESS1")+" "+ChatColor.GREEN+sign.getLine(1)+ChatColor.GRAY+" for "+ChatColor.GREEN+strcost+ChatColor.GRAY+getmsg("SUCCESS2")+"!");
         			if (Bukkit.getPluginManager().isPluginEnabled("GroupManager")) {
   					  //manuaddsub <user> <group>
+        				getServer().dispatchCommand(getServer().getConsoleSender(), "manselect "+player.getWorld().getName());
   					  getServer().dispatchCommand(getServer().getConsoleSender(), "manuaddsub "+ player.getName() +" "+sign.getLine(1));
+  					getServer().dispatchCommand(getServer().getConsoleSender(), "manclear ");
   				  }
   				  else if (Bukkit.getPluginManager().isPluginEnabled("PermissionsEx")) {
   					  //pex user <user> group add <group>
@@ -3384,6 +3391,8 @@ public class SignRanks extends JavaPlugin implements Listener {
         			if (Arrays.asList(perms.getGroups()).contains(myline)) {
         				if (Arrays.asList(mygroups).contains(myline)) {
         				}
+        				else if (perms.getPrimaryGroup(player).equalsIgnoreCase(myline)) {
+          				}
         				else {
         					hasperm = false;
         					reason += "&7"+getmsg("ERROR11")+" &c"+myline+"&7.\n";
@@ -3577,6 +3586,8 @@ public class SignRanks extends JavaPlugin implements Listener {
           			if (Arrays.asList(perms.getGroups()).contains(myline)) {
           				if (Arrays.asList(mygroups).contains(myline)) {
           				}
+          				else if (perms.getPrimaryGroup(player).equalsIgnoreCase(myline)) {
+          				}
           				else {
           					hasperm = false;
           					reason += "&7"+getmsg("ERROR11")+" &c"+myline+"&7.\n";
@@ -3754,6 +3765,8 @@ public class SignRanks extends JavaPlugin implements Listener {
           			try {
           			if (Arrays.asList(perms.getGroups()).contains(myline)) {
           				if (Arrays.asList(mygroups).contains(myline)) {
+          				}
+          				else if (perms.getPrimaryGroup(player).equalsIgnoreCase(myline)) {
           				}
           				else {
           					hasperm = false;
@@ -4107,7 +4120,7 @@ public class SignRanks extends JavaPlugin implements Listener {
           
           
           else if ((sign.getLine(0).equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.xpbank.text")))&&(this.getConfig().getBoolean("signs.types.xpbank.enabled"))) {
-        	  if ((player.getName().toLowerCase().contains(sign.getLine(3).toLowerCase()))||(checkperm(player,"signranks.use.xpbank")==true)) {
+        	  if ((player.getName().toLowerCase().contains(sign.getLine(3).toLowerCase()))&&(checkperm(player,"signranks.use.xpbank")==true)) {
         		  ExperienceManager expMan = new ExperienceManager(player);
         	  int amount = 0;
         	  if (player.isSneaking()) {

@@ -1,6 +1,6 @@
 name: SignRanksPlus
 main: com.empcraft.SignRanks
-version: 0.6.2
+version: 0.6.6
 author: Empire92
 website: www.empcraft.com
 softdepend: [InSigns]
