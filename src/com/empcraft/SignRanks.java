@@ -4,6 +4,8 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -304,7 +306,7 @@ public class SignRanks extends JavaPlugin implements Listener {
     		return null;
     	}
     }
-    public String execute(String line, Player user, Player sender, Boolean elevation) {
+    public String execute(String line, Player user, Player sender, Boolean elevation,Location interact) {
     	recursion++;
     	try {
     	final Map<String, Object> locals = new HashMap<String, Object>();
@@ -317,7 +319,7 @@ public class SignRanks extends JavaPlugin implements Listener {
 		String myvar = ",null";
 		for(int i = 0; i < mycmds.length; i++) {
 			if (i>=i2) {
-			String mycommand = evaluate(mycmds[i],user,sender,elevation);
+			String mycommand = evaluate(mycmds[i],user,sender,elevation,interact);
             for (final Entry<String, Object> node : locals.entrySet()) {
               	 if (mycommand.contains(node.getKey())) {
               		 mycommand = mycommand.replace(node.getKey(), (CharSequence) node.getValue());
@@ -345,6 +347,7 @@ public class SignRanks extends JavaPlugin implements Listener {
             				mytest+=mycmds[j]+";";
             			}
             			else {
+//            				System.out.println("END "+mycmds[j]);
             			}
             			if ((depth2 == 0)||(j==mycmds.length-1)) {
             				if (cmdargs[1].contains(":")) {
@@ -379,7 +382,7 @@ public class SignRanks extends JavaPlugin implements Listener {
             						globals.put("{"+cmdargs[1].split(":")[0]+"}", cmdargs[1].split(":")[1].split(",")[k]);
             					}
             					if (recursion<1024) {
-            						execute(mytest,user,sender,elevation);
+            						execute(mytest,user,sender,elevation,interact);
             					}
             				}
             				if (mode == 1) {
@@ -448,7 +451,7 @@ public class SignRanks extends JavaPlugin implements Listener {
             	  if (cmdargs.length>1) {
             	  if (cmdargs.length>2) {
             	  try {
-            	  globals.put("{"+evaluate(cmdargs[1],user,sender,elevation)+"}", evaluate(StringUtils.join(Arrays.copyOfRange(cmdargs, 2, cmdargs.length)," "),user,sender,elevation));
+            	  globals.put("{"+evaluate(cmdargs[1],user,sender,elevation,interact)+"}", evaluate(StringUtils.join(Arrays.copyOfRange(cmdargs, 2, cmdargs.length)," "),user,sender,elevation,interact));
             	  if (user != null) {
             	  }
             	  }
@@ -475,7 +478,7 @@ public class SignRanks extends JavaPlugin implements Listener {
             	  if (cmdargs.length>2) {
             	  try {
             		  
-            	  locals.put("{"+evaluate(cmdargs[1],user,sender,elevation)+"}", evaluate(StringUtils.join(Arrays.copyOfRange(cmdargs, 2, cmdargs.length)," "),user,sender,elevation));
+            	  locals.put("{"+evaluate(cmdargs[1],user,sender,elevation,interact)+"}", evaluate(StringUtils.join(Arrays.copyOfRange(cmdargs, 2, cmdargs.length)," "),user,sender,elevation,interact));
             	  if (user != null) {
             	  }
             	  }
@@ -543,7 +546,7 @@ public class SignRanks extends JavaPlugin implements Listener {
 				 return mycommand.substring(7,mycommand.length());
 			 }
 			else {
-				msg(user,colorise(evaluate(mycommand, user,sender,elevation)));
+				msg(user,colorise(evaluate(mycommand, user,sender,elevation,interact)));
 			}
               }
 			else {
@@ -552,7 +555,7 @@ public class SignRanks extends JavaPlugin implements Listener {
 					getServer().dispatchCommand(getServer().getConsoleSender(), mycommand);
 				}
 				else {
-					System.out.println(evaluate(mycommand, user,sender,elevation));
+					System.out.println(evaluate(mycommand, user,sender,elevation,interact));
 				}
 			}
 			
@@ -573,12 +576,12 @@ public class SignRanks extends JavaPlugin implements Listener {
         }
     	return "null";
     }
-    public String fphs(String line, Player user, Player sender, Boolean elevation) {
+    public String fphs(String line, Player user, Player sender, Boolean elevation,Location interact) {
     	String[] mysplit = line.substring(1,line.length()-1).split(":");
     	if (mysplit.length==2) {
     		if ((Bukkit.getPlayer(mysplit[1])!=null)) {
-        		user = Bukkit.getPlayer(mysplit[1]);
-        		line = "{"+mysplit[0]+"}";
+				user = Bukkit.getPlayer(mysplit[1]);
+				line = StringUtils.join(mysplit,":").replace(":"+mysplit[1],"");
         	}
     	}
     	if (line.contains("{setgroup:")) {
@@ -743,6 +746,9 @@ public class SignRanks extends JavaPlugin implements Listener {
     		Random random = new Random();
     		return (""+random.nextInt(Integer.parseInt(mysplit[1])));
     	}
+    	else if (line.contains("{msg:")) {
+    		return getmsg(mysplit[1]);
+    	}
     	else if (line.contains("{range:")) {
     		String mylist = "";
     		int start = 0;
@@ -906,8 +912,9 @@ public class SignRanks extends JavaPlugin implements Listener {
     	}
     	else if (line.contains("{time}")) {
     		Double time = user.getWorld().getTime() / 1000.0;
-    		if (time>24) { time-=24; }
-    		String hr = ""+time.intValue() + 6;
+    		Double time2 = time;
+    		if (time2>18) { time2-=25; }
+    		String hr = ""+(time2.intValue() + 6);
     		String min = ""+((int) (60*(time%1)));
     		if (min.length()==1) {
     			min = "0"+min;
@@ -917,11 +924,59 @@ public class SignRanks extends JavaPlugin implements Listener {
     		}
     		return ""+hr+":"+min;
     	}
+    	else if (line.contains("{localtime}")) {
+    		Date time = Calendar.getInstance().getTime();
+    		String hours = ""+time.getHours();
+    		String minutes = ""+time.getMinutes();
+    		String seconds = ""+time.getSeconds();
+    		if (hours.length()==1) {
+    			hours = "0"+hours;
+    		}
+    		if (minutes.length()==1) {
+    			minutes = "0"+minutes;
+    		}
+    		if (seconds.length()==1) {
+    			seconds = "0"+seconds;
+    		}
+    		return hours+":"+minutes+":"+seconds;
+    	}
+    	else if (line.contains("{localtime12}")) {
+    		String ampm = " AM";
+    		Date time = Calendar.getInstance().getTime();
+    		int hours = time.getHours();
+    		String minutes = ""+time.getMinutes();
+    		String seconds = ""+time.getSeconds();
+    		
+    		if (hours>12) {
+    			hours-=12;
+    			ampm = " PM";
+    		}
+    		else if(hours==12) {
+    			ampm = " PM";
+    		}
+    		else if (hours==0) {
+    			hours+=12;
+    		}
+    		
+    		if (minutes.length()==1) {
+    			minutes = "0"+minutes;
+    		}
+    		if (seconds.length()==1) {
+    			seconds = "0"+seconds;
+    		}
+    		
+    		String hr = ""+hours;
+    		if (hr.length()==1) {
+    			hr = "0"+hr;
+    		}
+    		return hr+":"+minutes+":"+seconds+ampm;
+    	}
     	else if (line.contains("{time:")) {
     		Location loc = getloc(mysplit[1], user);
     		Double time = loc.getWorld().getTime() / 1000.0;
-    		if (time>24) { time-=24; }
-    		String hr = ""+time.intValue() + 6;
+    		Double time2 = time;
+    		if (time2>18) { time2-=25; }
+    		String hr = ""+(time2.intValue() + 6);
     		String min = ""+((int) (60*(time%1)));
     		if (min.length()==1) {
     			min = "0"+min;
@@ -934,15 +989,26 @@ public class SignRanks extends JavaPlugin implements Listener {
     	else if (line.contains("{time12}")) {
     		String ampm = " AM";
     		Double time = user.getWorld().getTime() / 1000.0;
-    		if (time>24) { time-=24; }
-    		if (time+6>12) {
-    			time-=12;
+    		Double time2 = time;
+    		if (time2>18) { time2-=24; }
+    		time2+=6;
+    		if (time2.intValue()>13) {
+    			time2-=12;
     			ampm = " PM";
     		}
-    		String hr = ""+time.intValue() + 6;
+    		else if(time2>12) {
+    			ampm = " PM";
+    		}
+    		else if (time2 < 1) {
+    			time2+=12;
+    		}
+    		String hr = ""+(time2.intValue());
     		String min = ""+((int) (60*(time%1)));
     		if (min.length()==1) {
     			min = "0"+min;
+    		}
+    		if (hr.length()==1) {
+    			hr = "0"+hr;
     		}
     		return ""+hr+":"+min+ampm;
     	}
@@ -950,15 +1016,26 @@ public class SignRanks extends JavaPlugin implements Listener {
     		String ampm = " AM";
     		Location loc = getloc(mysplit[1], user);
     		Double time = loc.getWorld().getTime() / 1000.0;
-    		if (time>24) { time-=24; }
-    		if (time+6>12) {
+    		Double time2 = time;
+    		if (time2>18) { time2-=24; }
+    		time2+=6;
+    		if (time2.intValue()>13) {
+    			time2-=12;
     			ampm = " PM";
-    			time-=12;
     		}
-    		String hr = ""+time.intValue() + 6;
+    		else if(time2>12) {
+    			ampm = " PM";
+    		}
+    		else if (time2 < 1) {
+    			time2+=12;
+    		}
+    		String hr = ""+(time2.intValue());
     		String min = ""+((int) (60*(time%1)));
     		if (min.length()==1) {
     			min = "0"+min;
+    		}
+    		if (hr.length()==1) {
+    			hr = "0"+hr;
     		}
     		return ""+hr+":"+min+ampm;
     	}
@@ -1193,9 +1270,27 @@ public class SignRanks extends JavaPlugin implements Listener {
     		}
     		return mystr;
     	}
-		else if (line.contains("{exhaustion:")) {
+    	else if (line.contains("{exhaustion:")) {
+    		try {
 			ImprovedOfflinePlayer offlineplayer = new ImprovedOfflinePlayer(mysplit[1]);
 			return ""+offlineplayer.getExhaustion();
+    		}
+    		catch (Exception e) {
+    			IOP_1_7_2 offlineplayer = new IOP_1_7_2(mysplit[1]);
+    			return ""+offlineplayer.getExhaustion();
+    		}
+		}
+    	else if (line.contains("{display:")) {
+    		try {
+    			String nick = (new EssentialsFeature()).displayName(mysplit[1]);
+    			if (nick.equals("")) {
+    				return mysplit[1];
+    			}
+    			return nick;
+    		}
+    		catch (Exception e) {
+    			return mysplit[1];
+    		}
 		}
 		else if (line.contains("{firstjoin:")) {
 			return Long.toString(Bukkit.getOfflinePlayer(mysplit[1]).getFirstPlayed()/1000);		
@@ -1204,25 +1299,56 @@ public class SignRanks extends JavaPlugin implements Listener {
 			return Long.toString(Bukkit.getOfflinePlayer(mysplit[1]).getLastPlayed()/1000);		
 		}
 		else if (line.contains("{hunger:")) {
+    		try {
 			ImprovedOfflinePlayer offlineplayer = new ImprovedOfflinePlayer(mysplit[1]);
 			return ""+offlineplayer.getFoodLevel();
+    		}
+    		catch (Exception e) {
+    			IOP_1_7_2 offlineplayer = new IOP_1_7_2(mysplit[1]);
+    			return ""+offlineplayer.getFoodLevel();
+    		}
 		}
 		else if (line.contains("{air:")) {
+    		try {
 			ImprovedOfflinePlayer offlineplayer = new ImprovedOfflinePlayer(mysplit[1]);
 			return ""+offlineplayer.getRemainingAir();
+    		}
+    		catch (Exception e) {
+    			IOP_1_7_2 offlineplayer = new IOP_1_7_2(mysplit[1]);
+    			return ""+offlineplayer.getRemainingAir();
+    		}
 		}
 		else if (line.contains("{bed:")) {
+    		try {
 			ImprovedOfflinePlayer offlineplayer = new ImprovedOfflinePlayer(mysplit[1]);
 			return ""+offlineplayer.getBedSpawnLocation().getX()+","+offlineplayer.getBedSpawnLocation().getY()+","+offlineplayer.getBedSpawnLocation().getZ();
+    		}
+    		catch (Exception e) {
+    			IOP_1_7_2 offlineplayer = new IOP_1_7_2(mysplit[1]);
+    			return ""+offlineplayer.getBedSpawnLocation().getX()+","+offlineplayer.getBedSpawnLocation().getY()+","+offlineplayer.getBedSpawnLocation().getZ();
+    		}
 		}
 		else if (line.contains("{exp:")) {
+    		try {
 			ImprovedOfflinePlayer offlineplayer = new ImprovedOfflinePlayer(mysplit[1]);
 			return ""+offlineplayer.getTotalExperience();
+    		}
+    		catch (Exception e) {
+    			IOP_1_7_2 offlineplayer = new IOP_1_7_2(mysplit[1]);
+    			return ""+offlineplayer.getTotalExperience();
+    		}
 		}
 		else if (line.contains("{lvl:")) {
+    		try {
 			ImprovedOfflinePlayer offlineplayer = new ImprovedOfflinePlayer(mysplit[1]);
 			ExperienceManager expMan = new ExperienceManager(user);
 			return ""+expMan.getLevelForExp((int) Math.floor(offlineplayer.getTotalExperience()));
+    		}
+    		catch (Exception e) {
+    			IOP_1_7_2 offlineplayer = new IOP_1_7_2(mysplit[1]);
+    			ExperienceManager expMan = new ExperienceManager(user);
+    			return ""+expMan.getLevelForExp((int) Math.floor(offlineplayer.getTotalExperience()));
+    		}
 		}
 		else if (line.contains("{money:")) {
 			return ""+econ.getBalance(mysplit[1]);
@@ -1252,58 +1378,121 @@ public class SignRanks extends JavaPlugin implements Listener {
 			return ""+Bukkit.getOfflinePlayer(mysplit[1]).isOp();
 		}
 		else if (line.contains("{itemid:")) {
-			//TODO item
+    		try {
 			ImprovedOfflinePlayer offlineplayer = new ImprovedOfflinePlayer(mysplit[1]);
 			return ""+offlineplayer.getItemInHand();
+    		}
+    		catch (Exception e) {
+    			IOP_1_7_2 offlineplayer = new IOP_1_7_2(mysplit[1]);
+    			return ""+offlineplayer.getItemInHand();
+    		}
 		}
 		else if (line.contains("{itemamount:")) {
+    		try {
 			ImprovedOfflinePlayer offlineplayer = new ImprovedOfflinePlayer(mysplit[1]);
 			return ""+offlineplayer.getInventory().getItemInHand().getAmount();
+    		}
+    		catch (Exception e) {
+    			IOP_1_7_2 offlineplayer = new IOP_1_7_2(mysplit[1]);
+    			return ""+offlineplayer.getInventory().getItemInHand().getAmount();
+    		}
 		}
 		else if (line.contains("{itemname:")) {
+    		try {
 			ImprovedOfflinePlayer offlineplayer = new ImprovedOfflinePlayer(mysplit[1]);
 			return ""+offlineplayer.getInventory().getItemInHand().getType().toString();
+    		}
+    		catch (Exception e) {
+    			IOP_1_7_2 offlineplayer = new IOP_1_7_2(mysplit[1]);
+    			return ""+offlineplayer.getInventory().getItemInHand().getType().toString();
+    		}
 		}
 		else if (line.contains("{durability:")) {
+    		try {
 			ImprovedOfflinePlayer offlineplayer = new ImprovedOfflinePlayer(mysplit[1]);
 			return ""+offlineplayer.getInventory().getItemInHand().getDurability();
+    		}
+    		catch (Exception e) {
+    			IOP_1_7_2 offlineplayer = new IOP_1_7_2(mysplit[1]);
+    			return ""+offlineplayer.getInventory().getItemInHand().getDurability();
+    		}
 		}
-		else if (line.contains("{gamemode}")) {
-			ImprovedOfflinePlayer offlineplayer = new ImprovedOfflinePlayer(mysplit[1]);
-			if(offlineplayer.getGameMode() == GameMode.CREATIVE){
-	        	return "CREATIVE";
-	        }
-	        else if(offlineplayer.getGameMode() == GameMode.SURVIVAL){
-	        	return "SURVIVAL";
-	        }
-	        else {
-	        	return "ADVENTURE";
-	        }
+		else if (line.contains("{gamemode:")) {
+			try {
+				ImprovedOfflinePlayer offlineplayer = new ImprovedOfflinePlayer(mysplit[1]);
+				if(offlineplayer.getGameMode().equals(GameMode.CREATIVE)){
+		        	return "CREATIVE";
+		        }
+		        else if(offlineplayer.getGameMode().equals(GameMode.SURVIVAL)){
+		        	return "SURVIVAL";
+		        }
+		        else {
+		        	return "ADVENTURE";
+		        }
+	    		}
+	    		catch (Exception e) {
+	    			IOP_1_7_2 offlineplayer = new IOP_1_7_2(mysplit[1]);
+	    			if(offlineplayer.getGameMode().equals(GameMode.CREATIVE)){
+	    	        	return "CREATIVE";
+	    	        }
+	    	        else if(offlineplayer.getGameMode().equals(GameMode.SURVIVAL)){
+	    	        	return "SURVIVAL";
+	    	        }
+	    	        else {
+	    	        	return "ADVENTURE";
+	    	        }
+	    		}
 		}
 		else if (line.contains("{direction:")) {
-			ImprovedOfflinePlayer offlineplayer = new ImprovedOfflinePlayer(mysplit[1]);
-        	String tempstr = "null";
-            int degrees = (Math.round(offlineplayer.getLocation().getYaw()) + 270) % 360;
-            if (degrees <= 22)  {tempstr="WEST";}
-            else if (degrees <= 67) {tempstr="NORTHWEST";}
-            else if (degrees <= 112) {tempstr="NORTH";}
-            else if (degrees <= 157) {tempstr="NORTHEAST";}
-            else if (degrees <= 202) {tempstr="EAST";}
-            else if (degrees <= 247) {tempstr="SOUTHEAST";}
-            else if (degrees <= 292) {tempstr="SOUTH";}
-            else if (degrees <= 337) {tempstr="SOUTHWEST";}
-            else if (degrees <= 359) {tempstr="WEST";}
-            return tempstr;
+    		try {
+				ImprovedOfflinePlayer offlineplayer = new ImprovedOfflinePlayer(mysplit[1]);
+				String tempstr = "null";
+	            int degrees = (Math.round(offlineplayer.getLocation().getYaw()) + 270) % 360;
+	            if (degrees <= 22)  {tempstr="WEST";}
+	            else if (degrees <= 67) {tempstr="NORTHWEST";}
+	            else if (degrees <= 112) {tempstr="NORTH";}
+	            else if (degrees <= 157) {tempstr="NORTHEAST";}
+	            else if (degrees <= 202) {tempstr="EAST";}
+	            else if (degrees <= 247) {tempstr="SOUTHEAST";}
+	            else if (degrees <= 292) {tempstr="SOUTH";}
+	            else if (degrees <= 337) {tempstr="SOUTHWEST";}
+	            else if (degrees <= 359) {tempstr="WEST";}
+	            return tempstr;
+    		}
+    		catch (Exception e) {
+    			IOP_1_7_2 offlineplayer = new IOP_1_7_2(mysplit[1]);
+    			String tempstr = "null";
+                int degrees = (Math.round(offlineplayer.getLocation().getYaw()) + 270) % 360;
+                if (degrees <= 22)  {tempstr="WEST";}
+                else if (degrees <= 67) {tempstr="NORTHWEST";}
+                else if (degrees <= 112) {tempstr="NORTH";}
+                else if (degrees <= 157) {tempstr="NORTHEAST";}
+                else if (degrees <= 202) {tempstr="EAST";}
+                else if (degrees <= 247) {tempstr="SOUTHEAST";}
+                else if (degrees <= 292) {tempstr="SOUTH";}
+                else if (degrees <= 337) {tempstr="SOUTHWEST";}
+                else if (degrees <= 359) {tempstr="WEST";}
+                return tempstr;
+    		}
 		}
 		else if (line.contains("{health:")) {
+    		try {
 			ImprovedOfflinePlayer offlineplayer = new ImprovedOfflinePlayer(mysplit[1]);
 			return String.valueOf(offlineplayer.getHealthInt());
+    		}
+    		catch (Exception e) {
+    			IOP_1_7_2 offlineplayer = new IOP_1_7_2(mysplit[1]);
+    			return String.valueOf(offlineplayer.getHealthInt());
+    		}
 		}
 		else if (line.contains("{biome:")) {
 			Location loc = getloc(mysplit[1], user);
 			return loc.getWorld().getBiome(loc.getBlockX(), loc.getBlockZ()).toString();
 		}
-    	
+		else if (line.contains("{location:")) {
+			Location loc = getloc(mysplit[1], user);
+			return loc.getWorld().getName()+","+loc.getBlockX()+","+loc.getBlockY()+","+loc.getBlockZ();
+		}
     	
     	
     	
@@ -1338,159 +1527,155 @@ public class SignRanks extends JavaPlugin implements Listener {
 		}
     	//TODO
     	else if (user != null) {
+    		String line2 = line;
     		if (line.contains(":")) {
-    			line = line.split(":")[0]+"}";
+    			line2 = line.split(":")[0]+"}";
     		}
-    		if (line.equals("{player}")) {
+    		if (line2.equals("{player}")) {
     			return ""+user.getName();
     		}
-    		else if (line.equals("{sneaking}")) {
+    		else if (line2.equals("{sneaking}")) {
     			return ""+user.isSneaking();
     		}
-    		if (line.equals("{itempickup}")) {
+    		if (line2.equals("{itempickup}")) {
 	          return ""+user.getCanPickupItems();
 	        }
-    		else if (line.equals("{flying}")) {
+    		else if (line2.equals("{flying}")) {
     			return ""+user.getAllowFlight();
     		}
-    		else if (line.equals("{blocking}")) {
+    		else if (line2.equals("{blocking}")) {
     			return ""+user.isBlocking();
     		}
-    		else if (line.equals("{exhaustion}")) {
+    		else if (line2.equals("{exhaustion}")) {
     			return ""+user.getExhaustion();
     		}
-    		else if (line.equals("{firstjoin}")) {
+    		else if (line2.equals("{firstjoin}")) {
     			return ""+Long.toString(user.getFirstPlayed()/1000);
     		}
-    		else if (line.equals("{hunger}")) {
+    		else if (line2.equals("{hunger}")) {
     			return ""+user.getFoodLevel();
     		}
-    		else if (line.equals("{grounded}")) {
+    		else if (line2.equals("{grounded}")) {
     			return ""+user.isOnGround();
     		}
-    		else if (line.equals("{passenger}")) {
+    		else if (line2.equals("{passenger}")) {
     			if (user.getVehicle()==null) {
     				return "false";
     			}
     			return ""+user.getVehicle().toString();
     		}
-    		else if (line.equals("{maxhealth}")) {
+    		else if (line2.equals("{maxhealth}")) {
     			return ""+user.getMaxHealth();
     		}
-    		else if (line.equals("{maxair}")) {
+    		else if (line2.equals("{maxair}")) {
     			return ""+user.getMaximumAir();
     		}
-    		else if (line.equals("{air}")) {
+    		else if (line2.equals("{air}")) {
     			return ""+(user.getRemainingAir()/20);
     		}
-    		else if (line.equals("{age}")) {
+    		else if (line2.equals("{age}")) {
     			return ""+(user.getTicksLived()/20);
     		}
-    		else if (line.equals("{bed}")) {
+    		else if (line2.equals("{bed}")) {
     			return ""+user.getBedSpawnLocation().getX()+","+user.getBedSpawnLocation().getY()+","+user.getBedSpawnLocation().getZ();
     		}
-    		else if (line.equals("{compass}")) {
+    		else if (line2.equals("{compass}")) {
     			return ""+user.getCompassTarget().getX()+","+user.getCompassTarget().getY()+","+user.getCompassTarget().getZ();
     		}
-    		else if (line.equals("{storm}")) {
+    		else if (line2.equals("{storm}")) {
     			if (user.getWorld().hasStorm()) {
     				return "true";
     			}
     			return "false";
     		}
-    		else if (line.equals("{thunder}")) {
+    		else if (line2.equals("{thunder}")) {
     			if (user.getWorld().isThundering()) {
     				return "true";
     			}
     			return "false";
     		}
 
-    		else if (line.equals("{dead}")) {
+    		else if (line2.equals("{dead}")) {
     			return ""+user.isDead();
     		}
-    		else if (line.equals("{sleeping}")) {
+    		else if (line2.equals("{sleeping}")) {
     			return ""+user.isSleeping();
     		}
-    		else if (line.equals("{whitelisted}")) {
+    		else if (line2.equals("{whitelisted}")) {
     			return ""+user.isWhitelisted();
     		}
-    		else if (line.equals("{world}")) {
+    		else if (line2.equals("{world}")) {
     			return user.getWorld().getName();
     		}
-        	else if (line.contains("{world:")) {
+        	else if (line2.contains("{world:")) {
         		return Bukkit.getWorld(mysplit[1]).getName();
         	}
-        	else if (line.equals("{x}")) {
+        	else if (line2.equals("{x}")) {
     			return String.valueOf(Math.round(user.getLocation().getX()));
     		}
-    		else if (line.equals("{y}")) {
+    		else if (line2.equals("{y}")) {
     			return String.valueOf(Math.round(user.getLocation().getY()));
     		}
-    		else if (line.equals("{z}")) {
+    		else if (line2.equals("{z}")) {
     			return String.valueOf(Math.round(user.getLocation().getZ()));
     		}
 
-    		else if (line.equals("{lvl}")) {
+    		else if (line2.equals("{lvl}")) {
     			ExperienceManager expMan = new ExperienceManager(user);
     			return ""+expMan.getLevelForExp(expMan.getCurrentExp());
     		}
-    		else if (line.equals("{exp}")) {
+    		else if (line2.equals("{exp}")) {
     			ExperienceManager expMan = new ExperienceManager(user);
     			return ""+expMan.getCurrentExp();
     		}
-    		else if (line.equals("{money}")) {
+    		else if (line2.equals("{money}")) {
     			return ""+econ.getBalance(user.getName());
     		}
-    		else if (line.equals("{prefix}")) {
+    		else if (line2.equals("{prefix}")) {
     			return ""+chat.getPlayerPrefix(user);
     		}
-    		else if (line.equals("{suffix}")) {
+    		else if (line2.equals("{suffix}")) {
     			return ""+chat.getPlayerSuffix(user);
     		}
-    		else if (line.equals("{group}")) {
+    		else if (line2.equals("{group}")) {
     			return ""+perms.getPrimaryGroup(user);
     		}
-    		else if (line.equals("{operator}")) {
-    			if (user==null) {
-    				return "true";
-    			}
-    			else {
-    				return ""+user.isOp();
-    			}
+    		else if (line2.equals("{operator}")) {
+				return ""+user.isOp();
     		}
-    		else if (line.equals("{worldtype}")) {
+    		else if (line2.equals("{worldtype}")) {
     			return ""+user.getWorld().getWorldType();
     		}
-    		else if (line.equals("{itemid}")) {
+    		else if (line2.equals("{itemid}")) {
     			return String.valueOf(user.getInventory().getItemInHand().getTypeId());
     		}
-    		else if (line.equals("{itemamount}")) {
+    		else if (line2.equals("{itemamount}")) {
     			return String.valueOf(user.getInventory().getItemInHand().getAmount());
     		}
-    		else if (line.equals("{itemname}")) {
+    		else if (line2.equals("{itemname}")) {
     			return String.valueOf(user.getInventory().getItemInHand().getType());
     		}
-    		else if (line.equals("{durability}")) {
+    		else if (line2.equals("{durability}")) {
     			return String.valueOf(user.getInventory().getItemInHand().getDurability());
     		}
-    		else if (line.equals("{ip}")) {
+    		else if (line2.equals("{ip}")) {
     			return user.getAddress().getAddress().toString().split("/")[(user.getAddress().toString().split("/").length)-1].split(":")[0];
     		}
-    		else if (line.equals("{display}")) {
+    		else if (line2.equals("{display}")) {
     			return ""+user.getDisplayName();
     		}
-    		else if (line.equals("{gamemode}")) {
-    			if(user.getGameMode() == GameMode.CREATIVE){
+    		else if (line2.equals("{gamemode}")) {
+    			if(user.getGameMode().equals(GameMode.CREATIVE)){
     	        	return "CREATIVE";
     	        }
-    	        else if(user.getGameMode() == GameMode.SURVIVAL){
+    	        else if(user.getGameMode().equals(GameMode.SURVIVAL)){
     	        	return "SURVIVAL";
     	        }
     	        else {
     	        	return "ADVENTURE";
     	        }
     		}
-    		else if (line.equals("{direction}")) {
+    		else if (line2.equals("{direction}")) {
     	        	String tempstr = "null";
     	            int degrees = (Math.round(user.getLocation().getYaw()) + 270) % 360;
     	            if (degrees <= 22)  {tempstr="WEST";}
@@ -1504,12 +1689,26 @@ public class SignRanks extends JavaPlugin implements Listener {
     	            else if (degrees <= 359) {tempstr="WEST";}
     	            return tempstr;
     		}
-    		else if (line.equals("{biome}")) {
+    		else if (line2.equals("{biome}")) {
     			return user.getWorld().getBiome(user.getLocation().getBlockX(), user.getLocation().getBlockZ()).toString();
     		}
-    		else if (line.equals("{health}")) {
+    		else if (line2.equals("{location}")) {
+    			return user.getWorld().getName()+","+user.getLocation().getBlockX()+","+user.getLocation().getBlockY()+","+user.getLocation().getBlockZ();
+    		}
+    		else if (line2.equals("{health}")) {
     			return String.valueOf(user.getHealth());
     		}
+    	}
+    	if (interact!=null) {
+    		try {
+    			if (line.contains("{blockloc}")) {
+	    			return interact.getWorld().getName()+","+interact.getBlockX()+","+interact.getBlockY()+","+interact.getBlockZ();
+	    		}
+    		}
+    		 catch (Exception e) {
+    		 }
+    	}
+    	else {
     	}
     	
     	for (Entry<String, Object> node : globals.entrySet()) {
@@ -1517,26 +1716,20 @@ public class SignRanks extends JavaPlugin implements Listener {
     			return ""+node.getValue();
     		}
         }
-//    	System.out.println("1");
     	Set<String> custom = null;
     	FileConfiguration myconfig = getConfig();
 		custom = myconfig.getConfigurationSection("scripting.placeholders").getKeys(false);
-//		System.out.println("2");
     	if (custom.size()>0) {
-//    		System.out.println("3");
     		for (String mycustom:custom) {
-//    			System.out.println("5");
     			
     			if (line.contains("{"+mycustom+":")||line.equals("{"+mycustom+"}")) {
-//    				System.out.println("6");
 	    			List<String> current = myconfig.getStringList("scripting.placeholders."+mycustom);
 	    			String mycommands = StringUtils.join(current,";");
 	    			for(int i = 0; i < mysplit.length; i++) {
 	    				mycommands.replace("{arg"+i+"}", mysplit[i]);
 	    			}
 	    			try {
-//	    				System.out.println("6");
-	    				String result = execute(mycommands,user,sender,elevation);
+	    				String result = execute(mycommands,user,sender,elevation,interact);
 	    				if (result.substring(0,3).equals("if ")) {
 	    					return ""+testif(result);
 	    				}
@@ -1552,7 +1745,7 @@ public class SignRanks extends JavaPlugin implements Listener {
     	return "null";
     	
     }
-    public String evaluate(String line, Player user, Player sender, Boolean elevation) {
+    public String evaluate(String line, Player user, Player sender, Boolean elevation,Location interact) {
         String[] args = line.split(" "); 
         for(int i = 0; i < args.length; i++) {
         	if (line.contains("{arg"+(i+1)+"}")){
@@ -1583,7 +1776,7 @@ public class SignRanks extends JavaPlugin implements Listener {
        				boolean replaced = false;
        				if (replaced==false) {
        					try {
-       						line = line.replace(toreplace, fphs(toreplace,user,sender,elevation));
+       						line = line.replace(toreplace, fphs(toreplace,user,sender,elevation,interact));
        					}
        					catch (Exception e) {
        						line = line.replace(toreplace, "null");
@@ -1752,54 +1945,101 @@ public class SignRanks extends JavaPlugin implements Listener {
     		splittype = 1;
     	}
     	boolean toreturn = false;
+    	try {
     	String left = args[0].trim();
     	String right = args[1].trim();
-    	try {
-    		boolean failed = false;
-			int result1 = 0;
-			int result2 = 1;
-    		try {
-    		result1 = (int) Double.parseDouble("" + engine.eval(left));
-    		result2 = (int) Double.parseDouble("" + engine.eval(right));
-    		}
-    		catch (Exception e) {
-    			failed = true;
-    		}
-    		if (failed == false) {
-    		if (splittype == 1) { if (result1==result2) { toreturn = true; } }
-    		else if (splittype == 2) { if (result1>result2) { toreturn = true; } }
-    		else if (splittype == 3) { if (result1<result2) { toreturn = true; } }
-    		else if (splittype == 4) { if (result1>=result2) { toreturn = true; } }
-    		else if (splittype == 5) { if (result1<=result2) { toreturn = true; } }
-    		else if (splittype == 6) { if (result1!=result2) { toreturn = true; } }
-    		}
-		} catch (Exception e) {
+		boolean failed = false;
+		try {
+		Object result1 = null;
+		Object result2 = null;
+		result1 = engine.eval(left);
+		result2 = engine.eval(right);
+		try {
+			Double result3 = Double.parseDouble(""+result1);
+			Double result4 = Double.parseDouble(""+result2);
+			if (splittype == 1) { if (result3==result4) { toreturn = true; } }
+    		else if (splittype == 2) { if (result3>result4) { toreturn = true; } }
+    		else if (splittype == 3) { if (result3<result4) { toreturn = true; } }
+    		else if (splittype == 4) { if (result3>=result4) { toreturn = true; } }
+    		else if (splittype == 5) { if (result3<=result4) { toreturn = true; } }
+    		else if (splittype == 6) { if (result3!=result4) { toreturn = true; } }
+			return toreturn;
+		}
+		catch (Exception e) {
 			
 		}
-    	if (toreturn == false) {
-    	try {
-    		boolean failed = false;
-			String result1 = "true";
-			String result2 = "false";
-    		try {
-    		result1 = left.trim();
-    		result2 = right.trim();
-    		}
-    		catch (Exception e3) {
-    			failed = true;
-    		}
-    		if (failed == false) {
-    		if (splittype == 1) { if (result1.equals(result2)) { toreturn = true; } }
-    		else if (splittype == 2) { if (result1.length()>result2.length()) { toreturn = true; } }
-    		else if (splittype == 3) { if (result1.length()<result2.length()) { toreturn = true; } }
-    		else if (splittype == 4) { if (result1.length()>=result2.length()) { toreturn = true; } }
-    		else if (splittype == 5) { if (result1.length()<=result2.length()) { toreturn = true; } }
-    		else if (splittype == 6) { if (result1.equals(result2)==false) { toreturn = true; } }
-    		else if (splittype == 7) { if (result1.equalsIgnoreCase(result2)) { toreturn = true; } }
-    		}
-		} catch (Exception e1) {
+		try {
+			Integer result3 = Integer.parseInt(""+result1);
+			Integer result4 = Integer.parseInt(""+result2);
+			if (splittype == 1) { if (result3==result4) { toreturn = true; } }
+    		else if (splittype == 2) { if (result3>result4) { toreturn = true; } }
+    		else if (splittype == 3) { if (result3<result4) { toreturn = true; } }
+    		else if (splittype == 4) { if (result3>=result4) { toreturn = true; } }
+    		else if (splittype == 5) { if (result3<=result4) { toreturn = true; } }
+    		else if (splittype == 6) { if (result3!=result4) { toreturn = true; } }
+			return toreturn;
 		}
-    	}   	
+		catch (Exception e) {
+			
+		}
+		try {
+			Float result3 = Float.parseFloat(""+result1);
+			Float result4 = Float.parseFloat(""+result2);
+			if (splittype == 1) { if (result3==result4) { toreturn = true; } }
+    		else if (splittype == 2) { if (result3>result4) { toreturn = true; } }
+    		else if (splittype == 3) { if (result3<result4) { toreturn = true; } }
+    		else if (splittype == 4) { if (result3>=result4) { toreturn = true; } }
+    		else if (splittype == 5) { if (result3<=result4) { toreturn = true; } }
+    		else if (splittype == 6) { if (result3!=result4) { toreturn = true; } }
+			return toreturn;
+		}
+		catch (Exception e) {
+			
+		}
+		try {
+			Long result3 = Long.parseLong(""+result1);
+			Long result4 = Long.parseLong(""+result2);
+			if (splittype == 1) { if (result3==result4) { toreturn = true; } }
+    		else if (splittype == 2) { if (result3>result4) { toreturn = true; } }
+    		else if (splittype == 3) { if (result3<result4) { toreturn = true; } }
+    		else if (splittype == 4) { if (result3>=result4) { toreturn = true; } }
+    		else if (splittype == 5) { if (result3<=result4) { toreturn = true; } }
+    		else if (splittype == 6) { if (result3!=result4) { toreturn = true; } }
+			return toreturn;
+		}
+		catch (Exception e) {
+			
+		}
+		try {
+    		if (splittype == 1) { if (left.equals(right)) { toreturn = true; } }
+    		else if (splittype == 2) { if (left.compareTo(right)>0) { toreturn = true; } }
+    		else if (splittype == 3) { if (left.compareTo(right)<0) { toreturn = true; } }
+    		else if (splittype == 4) { if (left.compareTo(right)>=0) { toreturn = true; } }
+    		else if (splittype == 5) { if (left.compareTo(right)<=0) { toreturn = true; } }
+    		else if (splittype == 6) { if (left.equals(right)==false) { toreturn = true; } }
+    		else if (splittype == 7) { if (left.equalsIgnoreCase(right)) { toreturn = true; } }
+			return toreturn;
+		}
+		catch (Exception e) {
+		}
+		}
+		catch (Exception e) {
+			try {
+	    		if (splittype == 1) { if (left.equals(right)) { toreturn = true; } }
+	    		else if (splittype == 2) { if (left.compareTo(right)>0) { toreturn = true; } }
+	    		else if (splittype == 3) { if (left.compareTo(right)<0) { toreturn = true; } }
+	    		else if (splittype == 4) { if (left.compareTo(right)>=0) { toreturn = true; } }
+	    		else if (splittype == 5) { if (left.compareTo(right)<=0) { toreturn = true; } }
+	    		else if (splittype == 6) { if (left.equals(right)==false) { toreturn = true; } }
+	    		else if (splittype == 7) { if (left.equalsIgnoreCase(right)) { toreturn = true; } }
+				return toreturn;
+			}
+			catch (Exception e2) {
+			}
+		}
+    	}
+    	catch (Exception e3) {
+    	}
     	if (mystring.equalsIgnoreCase("false")) {
     		toreturn = false;
     	}
@@ -2011,7 +2251,7 @@ public class SignRanks extends JavaPlugin implements Listener {
 					if (time>task) {
 						List<String> toexecute = getConfig().getStringList("scripting.tasks."+current);
 						recursion = 0;
-						execute(StringUtils.join(toexecute,";"),null,null,true);
+						execute(StringUtils.join(toexecute,";"),null,null,true,null);
 						getConfig().getConfigurationSection("scripting.tasks").set(current, null);
 						saveConfig();
 					}
@@ -2080,44 +2320,6 @@ public class SignRanks extends JavaPlugin implements Listener {
         if(f8.exists()!=true) {  saveResource("scripts"+File.separator+"example.yml", false); }
         
         saveResource("idlist.yml", true);
-        //TODO update checking.
-        
-    	/* - TODO setuser setelevation setworld (DEFAULT WORLD = USER)
-	       - TODO proper functional place-holders
-		user.getWorld().getDifficulty();
-		user.getWorld().playSound(arg0, arg1, arg2, arg3);
-		user.getWorld().playEffect(arg0, arg1, arg2, arg3);
-		user.getWorld().canGenerateStructures()
-		user.getWorld().isGameRule(arg0);
-		user.getWorld().isAutoSave()
-		user.getWorld().isChunkInUse(arg0, arg1);
-		user.getWorld().isChunkLoaded(arg0);
-		user.getWorld().getAllowAnimals();
-		user.getWorld().getAllowMonsters();
-		user.getWorld().getAmbientSpawnLimit();
-		user.getWorld().getAnimalSpawnLimit();
-		user.getWorld().getTemperature(arg0, arg1);
-		user.getWorld().getWeatherDuration();
-		user.getWorld().getBlockAt(arg0);
-		user.getWorld().getBlockTypeIdAt(arg0);
-		user.getWorld().getEnvironment();
-		user.getWorld().getGameRules();
-		user.getWorld().getGameRuleValue(arg0);
-		user.getWorld().getGenerator();
-		user.getWorld().getHighestBlockAt(arg0);
-		user.getWorld().getHumidity(arg0, arg1)
-		user.getWorld().getMaxHeight();
-		user.getWorld().getMonsterSpawnLimit();
-		user.getWorld().getTime();
-		user.getWorld().getWaterAnimalSpawnLimit();
-		user.getWorld().getThunderDuration();
-		user.getWorld().getSeed();
-		user.getWorld().getSpawnLocation();
-		user.getWorld().getPVP();
-		user.getWorld().getPlayers(); 
-		
-		*/
-        
         File f1 = new File(getDataFolder() + File.separator + "scripts");
         File[] mysigns = f1.listFiles();
         for (int i = 0; i < mysigns.length; i++) {
@@ -2151,7 +2353,7 @@ public class SignRanks extends JavaPlugin implements Listener {
         
         
         final Map<String, Object> options = new HashMap<String, Object>();
-        getConfig().set("version", "0.6.6");
+        getConfig().set("version", "0.6.7");
         options.put("signs.protect",true);
         options.put("language","english");
         
@@ -2255,7 +2457,7 @@ public class SignRanks extends JavaPlugin implements Listener {
 	        else {
        	if (this.getConfig().getString("scripting.replace-chat").trim().equalsIgnoreCase("true")) {
        		recursion = 0;
-       		String msg = evaluate(event.getMessage(),event.getPlayer(),event.getPlayer(),false);
+       		String msg = evaluate(event.getMessage(),event.getPlayer(),event.getPlayer(),false,null);
        		if (msg.equals(event.getMessage())==false) {
        			if (msg.length()>200) {
        				msg = msg.substring(0,200);
@@ -2272,10 +2474,10 @@ public class SignRanks extends JavaPlugin implements Listener {
 	       else {
 	    	   boolean cancel = true;
 	    	   recursion = 0;
-	    	   String msg = evaluate(this.getConfig().getString("scripting.replace-chat")+""+event.getMessage(),event.getPlayer(),event.getPlayer(),false);
+	    	   String msg = evaluate(this.getConfig().getString("scripting.replace-chat")+""+event.getMessage(),event.getPlayer(),event.getPlayer(),false,null);
 	       		msg(null,msg);
 	       		for(Player user:getServer().getOnlinePlayers()){
-	       			msg = evaluate(this.getConfig().getString("scripting.replace-chat").replace("{line}",event.getMessage()),user,event.getPlayer(),false);
+	       			msg = evaluate(this.getConfig().getString("scripting.replace-chat").replace("{line}",event.getMessage()),user,event.getPlayer(),false,null);
 	       			if (msg.length()>150) {
 	       				msg = msg.substring(0,150);
 	       			}
@@ -3062,7 +3264,7 @@ public class SignRanks extends JavaPlugin implements Listener {
 	       							
 	       						}
 	       						else {
-	       							String result = evaluate(myline,player,player,false);
+	       							String result = evaluate(myline,player,player,false,sign.getLocation());
 	       							if (result.equals("true")) {
 	       							
 	       							}
@@ -3244,7 +3446,7 @@ public class SignRanks extends JavaPlugin implements Listener {
 	       						}
 	       						else {
 	       							if ((StringUtils.countMatches(myline, "{")==1)&&(StringUtils.countMatches(myline, "}")==1)) {
-	       								if (evaluate(myline,player,player,false).equals("true")) {
+	       								if (evaluate(myline,player,player,false,sign.getLocation()).equals("true")) {
 	       									
 	       								}
 	       								else {
@@ -3450,7 +3652,7 @@ public class SignRanks extends JavaPlugin implements Listener {
 	       						}
 	       						else {
 	       							if ((StringUtils.countMatches(myline, "{")==1)&&(StringUtils.countMatches(myline, "}")==1)) {
-	       								if (evaluate(myline,player,player,false).equals("true")) {
+	       								if (evaluate(myline,player,player,false,sign.getLocation()).equals("true")) {
 	       									
 	       								}
 	       								else {
@@ -3645,7 +3847,7 @@ public class SignRanks extends JavaPlugin implements Listener {
 	       						}
   	       						else {
 	       							if ((StringUtils.countMatches(myline, "{")==1)&&(StringUtils.countMatches(myline, "}")==1)) {
-	       								if (evaluate(myline,player,player,false).equals("true")) {
+	       								if (evaluate(myline,player,player,false,sign.getLocation()).equals("true")) {
 	       									
 	       								}
 	       								else {
@@ -3825,7 +4027,7 @@ public class SignRanks extends JavaPlugin implements Listener {
 	       						}
   	       						else {
 	       							if ((StringUtils.countMatches(myline, "{")==1)&&(StringUtils.countMatches(myline, "}")==1)) {
-	       								if (evaluate(myline,player,player,false).equals("true")) {
+	       								if (evaluate(myline,player,player,false,sign.getLocation()).equals("true")) {
 	       									
 	       								}
 	       								else {
@@ -4185,13 +4387,13 @@ public class SignRanks extends JavaPlugin implements Listener {
 		        						if ((getConfig().getString("signs.types.custom."+current+".elevation").equalsIgnoreCase("operator"))||(getConfig().getString("signs.types.custom."+current+".elevation").equalsIgnoreCase("op"))) {
 
 			        						if (player.isOp()) {
-			        							execute(mycommand,player,player,true);
+			        							execute(mycommand,player,player,true,sign.getLocation());
 			        						}
 			        						else {
 			        			        	  try
 			        			        	  {
 			        			        	      player.setOp(true);
-			        			        	      execute(mycommand,player,player,true);
+			        			        	      execute(mycommand,player,player,true,sign.getLocation());
 			        			        	  }
 			        			        	  catch(Exception e)
 			        			        	  {
@@ -4206,10 +4408,10 @@ public class SignRanks extends JavaPlugin implements Listener {
 			        						
 			        					}
 			        						else if (getConfig().getString("signs.types.custom."+current+".elevation").equalsIgnoreCase("console")){
-			        							execute(mycommand,null,null,true);
+			        							execute(mycommand,null,null,true,sign.getLocation());
 			        						}
 			        						else {
-			        							execute(mycommand,player,player,false);
+			        							execute(mycommand,player,player,false,sign.getLocation());
 			        						}
 
 	        				}
@@ -4224,11 +4426,7 @@ public class SignRanks extends JavaPlugin implements Listener {
     		  //TODO left click shop
     		  //CHECK IF OWNER
     		  //CHECK IF CROUCHING
-    		  if (player.getName().contains(sign.getLine(3))) {
-    			  
-    			  
-    			  
-    			  
+    		  if (player.getName().contains(sign.getLine(3))&&(player.getGameMode().equals(GameMode.CREATIVE)==false)) {
     			  int items = Integer.parseInt(sign.getLine(0).replace(" - §1"+this.getConfig().getString("signs.types.shop.text"),""));
     			  Object[] iteminfo = LevensteinDistance(sign.getLine(1));
     			  int maxstorage = getConfig().getInt("signs.types.shop.storage");
@@ -4258,7 +4456,7 @@ public class SignRanks extends JavaPlugin implements Listener {
     					  sign.update();
     				  }
     				  else {
-    					  msg(player,"&d"+getmsg("GREETING"));
+						  msg(player,"&d"+getmsg("GREETING"));
     				  }
     			  }
     			  
@@ -4267,7 +4465,12 @@ public class SignRanks extends JavaPlugin implements Listener {
     			  
     		  }
     		  else {
-    			  msg(player,"&d"+getmsg("GREETING"));
+    			  if (player.getGameMode()==GameMode.CREATIVE) {
+					  msg(player,"&7"+getmsg("REQ1")+"&c SURVIVAL MODE&7.");
+				  }
+				  else {
+					  msg(player,"&d"+getmsg("GREETING"));
+				  }
     		  }
     	  }
     	  else if ((sign.getLine(0).equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.promote.text")))&&(this.getConfig().getBoolean("signs.types.promote.enabled"))) {
@@ -4653,7 +4856,8 @@ public class SignRanks extends JavaPlugin implements Listener {
     	else if ((cmd.getName().equalsIgnoreCase("signranks"))||(cmd.getName().equalsIgnoreCase("sr"))) {
     	if (args.length > 0) {
     		if ((args[0].equalsIgnoreCase("reload"))){
-    			
+    			this.reloadConfig();
+    			this.saveDefaultConfig();
     			//TODO RELOAD SCRIPTS FOLDER AND SIGNS FOLDER
     			
     			boolean hasperm = false;
@@ -4696,6 +4900,7 @@ public class SignRanks extends JavaPlugin implements Listener {
     		        		}
     		        	}
     		        }
+    		        this.saveConfig();
     			try {
 	    			Set<String> vars = getConfig().getConfigurationSection("scripting.variables").getKeys(false);
 	    			for(String current : vars) {
@@ -4706,8 +4911,6 @@ public class SignRanks extends JavaPlugin implements Listener {
     				
     			}
     			counter = 0;
-    			this.reloadConfig();
-    			this.saveDefaultConfig();
 				msg(user,ChatColor.LIGHT_PURPLE+getmsg("SUCCESS6")+".");
     			}
     			else {
@@ -4740,7 +4943,12 @@ public class SignRanks extends JavaPlugin implements Listener {
     			}
     		}
     		else if ((args[0].equalsIgnoreCase("help"))){
-    			msg(user,"/sr <save|reload|pay|help>");
+    			if (args.length>1) {
+    				msg(user,"&6Scripting commands for '&cSignRanks&6':\n&6/all&f: run a script for all players\n&6/player &f: run a script for a player\n&6/execute &f: run a script\n&6/eval &f: evaluate a statement\n&6/if &f: check a statement\n&6/schedule &f: Schedule a script\n&6/gvar &f: set global variables");
+    			}
+    			else {
+    				msg(user,"&6Commands for '&cSignRanks&6':\n&6/sr save&f: Save Variables\n&6/sr reload&f: Reload the plugin\n&6/sr pay&f: Force a paycheck\n&6/xpp&f: Transfer xp to a player\n&6/se&f: Edit existing signs\n&6/sr help 2&f: SignRanks scripting commands");
+    			}
     		}
 		else if ((args[0].equalsIgnoreCase("pay"))) {
 			if (checkperm(user,"signranks.pay")==true) {
@@ -4753,26 +4961,26 @@ public class SignRanks extends JavaPlugin implements Listener {
     	}
     	else {
     		// signranks help
-    		msg(user,"/sr <save|reload|pay|help>");
+    		msg(user,"/sr <save|reload|help>");
     	}
 		}
     	else if (cmd.getName().equalsIgnoreCase("all")) {
     		if (checkperm(user,"signranks.all")) {
     			if (args.length > 0) {
     				if (user==null) {
-    					execute(line,null,null,true);
+    					execute(line,null,null,true,null);
     				}
     				for(Player user2:getServer().getOnlinePlayers()){
     					recursion = 0;
     					if (checkperm(user,"signranks.all.elevate")) {
-    						execute(line,user2,user,true);
+    						execute(line,user2,user,true,null);
     					}
     					else {
-    						execute(line,user2,user,false);
+    						execute(line,user2,user,false,null);
     					}
     	            if (getConfig().getInt("scripting.debug-level") > 2) {
     	            	if (user2.getName()!=sender.getName()) {
-    	            		msg(user,ChatColor.RED+getmsg("SUCCESS7")+" "+user2.getName()+": "+ChatColor.WHITE+colorise(evaluate(line, user2,user,false)));
+    	            		msg(user,ChatColor.RED+getmsg("SUCCESS7")+" "+user2.getName()+": "+ChatColor.WHITE+colorise(evaluate(line, user2,user,false,null)));
     	            	}
     	            }
 					}
@@ -4828,7 +5036,7 @@ public class SignRanks extends JavaPlugin implements Listener {
 		    			}
 		    		}
 		    		catch (Exception e) {
-		    			msg(user,ChatColor.RED+getmsg("ERROR32")+ChatColor.GRAY+".");
+		    			msg(user,"&f/se <line> <value>\n"+ChatColor.RED+getmsg("ERROR32")+ChatColor.GRAY+".");
 		    		}
 		    		}
     		else {
@@ -4838,7 +5046,7 @@ public class SignRanks extends JavaPlugin implements Listener {
 //    	Sign sign = (Sign) (loc.getBlock().getState());
     	else if (cmd.getName().equalsIgnoreCase("if")) {
     		recursion = 0;
-            line = evaluate(line,user,user,false);
+            line = evaluate(line,user,user,false,null);
             msg(user,"if "+line+" -> "+testif(line));
     		return true;
     	}
@@ -4847,7 +5055,16 @@ public class SignRanks extends JavaPlugin implements Listener {
     		if (user instanceof Player) {
     			if (checkperm(user,"signranks.schedule")) {
     				hasperm = true;
-    				msg(user,colorise("&7"+getmsg("SUCCESS8")+": &a"+line+"&7."));
+    				try {
+    					timetosec(args[0]);
+    					msg(user,colorise("&7"+getmsg("SUCCESS8")+": &a"+line+"&7."));
+    				}
+    				catch (Exception e) {
+    					if (args.length>1) {
+    						msg(player,"&cInvalid time: "+args[0]);
+    						return false;
+    					}
+    				}
     			}
     		}
     		else {
@@ -4855,6 +5072,7 @@ public class SignRanks extends JavaPlugin implements Listener {
     			hasperm = true;
     		}
     		if (hasperm) {
+    			if (args.length > 1) {
 				  String mytime = timetosec(args[0]);
 				  if (mytime!=null) {
 	    				line = "";
@@ -4874,9 +5092,13 @@ public class SignRanks extends JavaPlugin implements Listener {
 				  }
     		}
     		else {
-    			msg(user,ChatColor.GRAY+getmsg("REQ1")+" "+ChatColor.RED+"signranks.schedule"+ChatColor.GRAY+".");
+    			msg(user,"/schedule <time:w|d|h|m|s> <script>\n e.g. /schedule 10s do say yo");
     		}
     		return true;
+    		}
+    		else {
+    			msg(user,ChatColor.GRAY+getmsg("REQ1")+" "+ChatColor.RED+"signranks.schedule"+ChatColor.GRAY+".");
+    		}
     	}
     	else if (cmd.getName().equalsIgnoreCase("endif")) {
     		return true;
@@ -4885,10 +5107,12 @@ public class SignRanks extends JavaPlugin implements Listener {
     		return true;
     	}
     	else if (cmd.getName().equalsIgnoreCase("eval")) {
-    		recursion = 0;
-    		if (getConfig().getInt("scripting.debug-level") > 0) {
-    			msg(user,"eval "+line+" -> "+evaluate(line,user,user,false));
+    		if (args.length<1) {
+    			msg(user,"/eval <statement>\n e.g. /eval 1+1");
+    			return false;
     		}
+    		recursion = 0;
+			msg(user,"eval "+line+" -> "+evaluate(line,user,user,false,null));
     		return true;
     	}
     	else if (cmd.getName().equalsIgnoreCase("execute")) {
@@ -4898,11 +5122,11 @@ public class SignRanks extends JavaPlugin implements Listener {
     			hasperm = true;
     		}
     		if (user instanceof Player==false) {
-    			execute(line,null,null,true);
+    			execute(line,null,null,true,null);
     		}
     		else {
     			if (hasperm) {
-    				execute(line,user,user,true);
+    				execute(line,user,user,true,null);
     			}
     			else {
     				msg(user,ChatColor.GRAY+getmsg("REQ1")+" "+ChatColor.RED+"signranks.execute"+ChatColor.GRAY+".");
@@ -4916,7 +5140,7 @@ public class SignRanks extends JavaPlugin implements Listener {
     				if (checkperm(user,"signranks.variable")) {
     			 if (args.length>1) {
 	            	  try {
-	            	  globals.put("{"+evaluate(args[0],user,user,false)+"}", evaluate(StringUtils.join(Arrays.copyOfRange(args, 1, args.length)," "),user,user,false));
+	            	  globals.put("{"+evaluate(args[0],user,user,false,null)+"}", evaluate(StringUtils.join(Arrays.copyOfRange(args, 1, args.length)," "),user,user,false,null));
 	            	  
 	              		if (getConfig().getInt("scripting.debug-level") > 1) {
 	              			msg(user,"global var "+args[0]+" -> "+args[1]);
@@ -4946,9 +5170,10 @@ public class SignRanks extends JavaPlugin implements Listener {
     				else {
     					
     				}
-    		}
+    			}
     			else {
-    				if (getConfig().getInt("scripting.debug-level") > 0) { msg(user,"globals: "+globals); }
+    				msg(user,"/gvar <variable> <value>");
+    				msg(user,"globals: "+globals);
     			}
     		return true;
     	}
@@ -4967,10 +5192,10 @@ public class SignRanks extends JavaPlugin implements Listener {
     		            	line+=args[i]+" ";
     		            }
     		            if (checkperm(user,"signranks.player.elevate")) {
-    		            	execute(line,user2,user,true);
+    		            	execute(line,user2,user,true,null);
     		            }
     		            else {
-    		            	execute(line,user2,user,false);
+    		            	execute(line,user2,user,false,null);
     		            }
     					
     				}
