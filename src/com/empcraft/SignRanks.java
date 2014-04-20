@@ -225,6 +225,9 @@ public class SignRanks extends JavaPlugin implements Listener {
     	
         public String matchgroup(String group) {
     		String[] groups = (perms.getGroups());
+    		if (Arrays.asList(perms.getGroups()).contains(group)) {
+    			return group;
+    		}
     		for (String current:groups) {
     			if (group.equalsIgnoreCase(current)) {
     				return current;
@@ -434,17 +437,33 @@ public class SignRanks extends JavaPlugin implements Listener {
             	  }
             	  }
               }
+//              else if (cmdargs[0].equalsIgnoreCase("endif")) {
+//            	  if (depth >0) {
+//            		  if (last==depth) {
+//            			  last-=1;
+//            		  }
+//            		  depth-=1;
+//            		  if (last==depth) {
+//            			  hasperm = true;
+//            			  if (user != null) {
+//            		  }
+//            		  }
+//            	  }
+//              }
+            //TODO check endif
               else if (cmdargs[0].equalsIgnoreCase("endif")) {
             	  if (depth >0) {
-            		  if (last==depth) {
-            			  last-=1;
-            		  }
-            		  depth-=1;
             		  if (last==depth) {
             			  hasperm = true;
             			  if (user != null) {
             		  }
             		  }
+            		  if (last==depth) {
+            			  last-=1;
+            		  }
+            		  depth-=1;
+            	  }
+            	  else {
             	  }
               }
               else if (cmdargs[0].equalsIgnoreCase("gvar")) {
@@ -2081,6 +2100,9 @@ public class SignRanks extends JavaPlugin implements Listener {
 			int paylvl = 0;
     		paymoney = 0;
     		for(String group : groups) {
+    			Double lastmoney = paymoney;
+    			int lastlvl = paylvl;
+    			int lastexp = payexp;
     			boolean has = false;
     			if (getConfig().getString("economy.salary.check-subgroups").equalsIgnoreCase("true")) {
   	          	  String[] mygroups = perms.getPlayerGroups(player);
@@ -2120,10 +2142,10 @@ public class SignRanks extends JavaPlugin implements Listener {
     				{
     					paymoney += getConfig().getInt(("economy.salary.groups."+group+".money.base"));
     					paymoney += getConfig().getInt(("economy.salary.groups."+group+".money.bonus"))*(getServer().getOnlinePlayers().length-1);
-    					paymoney += (getConfig().getInt(("economy.salary.groups."+group+".money.percentage"))*(econ.getBalance(player.getName())))/100;
+    					paymoney += (getConfig().getDouble(("economy.salary.groups."+group+".money.percentage"))*(econ.getBalance(player.getName())))/100;
     				}
     			if ((paymoney + payexp + paylvl!=0)&&(getConfig().getInt("economy.salary.notify-level")>1)) {
-    				msg(player,"    "+ChatColor.GRAY+getConfig().getString("economy.symbol")+paymoney+ChatColor.WHITE+", "+ChatColor.GRAY+payexp+" exp"+ChatColor.WHITE+", "+ChatColor.GRAY+paylvl+" lvl"+ChatColor.WHITE+" from group "+ChatColor.BLUE+group);
+    				msg(player,"    "+ChatColor.GRAY+getConfig().getString("economy.symbol")+(paymoney-lastmoney)+ChatColor.WHITE+", "+ChatColor.GRAY+(payexp-lastexp)+" exp"+ChatColor.WHITE+", "+ChatColor.GRAY+(paylvl-lastlvl)+" lvl"+ChatColor.WHITE+" from group "+ChatColor.BLUE+group);
     			}
     			}
     			else {
@@ -2740,7 +2762,7 @@ public class SignRanks extends JavaPlugin implements Listener {
 		if (((line1.equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.promote.text"))) || (line1.equalsIgnoreCase(this.getConfig().getString("signs.types.promote.text"))))&&(this.getConfig().getBoolean("signs.types.promote.enabled"))) {
 			type2 = this.getConfig().getString("signs.types.promote.text");
 			if (checkperm(player,"signranks.create.promote")) {
-	        	  if (Arrays.asList(perms.getGroups()).contains(matchgroup(line2))) {
+	        	  if ((Arrays.asList(perms.getGroups()).contains(matchgroup(line2)))||(Arrays.asList(perms.getGroups()).contains(line2))) {
 	        		  line2 = matchgroup(line2);
 	        		  event.setLine(1, line2);
 	        		  sign.update(true);
@@ -2755,7 +2777,7 @@ public class SignRanks extends JavaPlugin implements Listener {
 		else if (((line1.equalsIgnoreCase("§1"+this.getConfig().getString("signs.types.inherit.text"))) || (line1.equalsIgnoreCase(this.getConfig().getString("signs.types.inherit.text"))))&&(this.getConfig().getBoolean("signs.types.inherit.enabled"))) {
 			type2 = this.getConfig().getString("signs.types.inherit.text");
 			if (checkperm(player,"signranks.create.inherit")) {
-	        	  if (Arrays.asList(perms.getGroups()).contains(matchgroup(line2))) {
+				if ((Arrays.asList(perms.getGroups()).contains(matchgroup(line2)))||(Arrays.asList(perms.getGroups()).contains(line2))) {
 	        		  line2 = matchgroup(line2);
 	        		  event.setLine(1, line2);
 	        		  sign.update(true);

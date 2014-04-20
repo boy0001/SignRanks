@@ -19,29 +19,20 @@ commands:
    gvar:
       description: manage global variables
    xpp:
-      description: Transfer exp to another player.
-      permission: signranks.xpp  
+      description: Transfer exp to another player. 
    sr:
       description: Alias for /signranks
-      permission: signranks.help
    se:
       description: edit a sign
-      permission: signranks.signedit
    signedit:
       description: edit a sign
-      permission: signranks.signedit
    sedit:
       description: edit a sign
-      permission: signranks.signedit
    schedule:
       description: schedule a task
-      permission: signranks.schedule
    signranks:
       description: Basic SignRanksPlus command.
-      permission: signranks.help
    all:
       description: Broadcasts a message (supports formatting)
-      permission: signranks.all
    player:
       description: Displays text to a player (supports formatting)
-      permission: signranks.player
